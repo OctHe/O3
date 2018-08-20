@@ -1,8 +1,9 @@
 function GlobalVariables
 
-global N_SC N_CP LONG_PREAMBLE_LEN TONES_NUM SC_DATA_NUM SC_PILOT_NUM
-N_SC                    = 64;                                     % Number of subcarriers
-N_CP                    = 16;                                     % Cyclic prefix length
+global N_SC N_CP STF_LEN LONG_PREAMBLE_LEN TONES_NUM SC_DATA_NUM SC_PILOT_NUM
+N_SC                    = 64;           % Number of subcarriers
+N_CP                    = 16;           % Cyclic prefix length
+STF_LEN                 = 160;          % STF length; 16 * 10
 LONG_PREAMBLE_LEN       = 128; 
 TONES_NUM               = 52;
 SC_DATA_NUM             = 48;

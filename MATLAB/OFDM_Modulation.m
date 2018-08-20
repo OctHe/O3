@@ -4,7 +4,7 @@ function Payload_t = OFDM_Modulation(BinData, MOD_ORDER)
 
 global SC_IND_PILOTS SC_IND_DATA N_SC PILOTS SC_DATA_NUM
 global DEBUG
-GlobalVariables;
+% GlobalVariables;
 %% Params
 DataNum = length(BinData) / log2(MOD_ORDER);
 SymbolNum = DataNum / SC_DATA_NUM;

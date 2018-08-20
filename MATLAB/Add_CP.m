@@ -4,7 +4,7 @@ function OutputData = Add_CP(InputData, sign)
 
 
 global N_SC N_CP
-GlobalVariables;
+% GlobalVariables;
 
 if sign == true
     SymbolNum = length(InputData) / N_SC;

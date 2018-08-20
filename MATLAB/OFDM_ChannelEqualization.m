@@ -5,7 +5,7 @@ function Payload_RX_f = OFDM_ChannelEqualization(Payload_RX_t, CSI)
 
 global N_SC GUARD_SC_INDEX
 global DEBUG
-GlobalVariables;
+% GlobalVariables;
 
 [~, SymbolNum] = size(Payload_RX_t);
 

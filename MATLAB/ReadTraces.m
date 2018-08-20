@@ -5,7 +5,7 @@ global N_SC N_CP
 global TONES_INDEX
 global DEBUG
 
-GlobalVariables;
+% GlobalVariables;
 
 
 %% Read from file

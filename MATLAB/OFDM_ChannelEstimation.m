@@ -4,7 +4,7 @@ function ChannelStateInfo = OFDM_ChannelEstimation(LongPreambleRX_t)
 
 
 global N_CP N_SC
-GlobalVariables;
+% GlobalVariables;
 
 [~,  LongPreambleTX_t] = PreambleGenerator; 
 LongPreambleTX_t = LongPreambleTX_t(2 * N_CP + N_SC + 1: end);

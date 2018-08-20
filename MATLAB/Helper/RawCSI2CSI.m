@@ -1,11 +1,13 @@
 function [CSIs_linear, SNRs_mW] = RawCSI2CSI(RawCSIs, SNRs_dBm)
-% the CSIs measured from a device are usually don't unit
+% the CSIs measured from a device are usually no unit
 % this function change the unit of the CSI and the SNR to mW. 
 % RawCSI: N_SC * Nums, no unit; SNR_dBm: Nums * 1, unit is dBm;
 % CSI_linear, SNR_mW
 
 global N_SC N_CP
 global DEBUG
+
+GlobalVariables;
 
 SNR_Nums = size(SNRs_dBm, 1);
 
