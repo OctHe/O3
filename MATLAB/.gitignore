@@ -1,0 +1,3 @@
+# ignore the data files
+*.txt
+*.h5
