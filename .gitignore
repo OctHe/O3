@@ -1,3 +1,2 @@
-# ignore the data files
-*.txt
+/MATLAB/*.txt
 *.h5
