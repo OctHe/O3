@@ -5,8 +5,8 @@ global N_SC
 GlobalVariables;
 
 %% Local Params
-MOD_ORDER               = 4;            % Modulation order (2/4/16/64 = BSPK/QPSK/16-QAM/64-QAM)
-DATA_NUM                = 48 * 6;       % the minimum data number is 48 * 6 to compatible with the rate 2/3 and 3/4
+MOD_ORDER               = 64;            % Modulation order (2/4/16/64 = BSPK/QPSK/16-QAM/64-QAM)
+DATA_NUM                = 48;       % the minimum data number is 48 * 6 to compatible with the rate 2/3 and 3/4
 Code_Rate               = 2;            % 2(1/2); 3(2/3); 4(3/4)
 
 MOD_ORDER_Map = [2, 2, 4, 4, 16, 16, 64, 64];
@@ -26,7 +26,7 @@ TX_OFDM_Symbol_t = OFDM_Modulation(TX_InterleavedDataBin, MOD_ORDER);
 
 %% The phase shift at the time domain
 
-RX_OFDM_Symbol_t = TX_OFDM_Symbol_t * exp(1j * pi);
+RX_OFDM_Symbol_t = TX_OFDM_Symbol_t * exp(1j * pi / 2);
 
 %% Receiver pipeline
 RX_OFDM_Symbol_f = fft(reshape(RX_OFDM_Symbol_t, N_SC, []), N_SC, 1);
