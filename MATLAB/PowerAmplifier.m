@@ -1,4 +1,4 @@
-function SignalAir = PowerAmplitude(Signal, Power)
+function SignalAir = PowerAmplifier(Signal, Power)
 % signal: vector; Power: scalar, unit is uW;
 % powered signal
 

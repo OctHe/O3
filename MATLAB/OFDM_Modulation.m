@@ -2,12 +2,9 @@ function Payload_t = OFDM_Modulation(BinData, MOD_ORDER)
 % column vector; scalar
 % column vector
 
+%% Params
 global SC_IND_PILOTS SC_IND_DATA N_SC PILOTS SC_DATA_NUM
 global DEBUG
-% GlobalVariables;
-%% Params
-DataNum = length(BinData) / log2(MOD_ORDER);
-SymbolNum = DataNum / SC_DATA_NUM;
 
 %% BPSK, QPSK, 16QAM, 64QAM modulator
 switch MOD_ORDER
@@ -23,7 +20,10 @@ switch MOD_ORDER
         error('Invalid MOD_ORDER!  Must be in [2, 4, 16, 64]\n');
 end
 
-%% OFDM Modulator
+%% OFDM modulator
+DataNum = length(BinData) / log2(MOD_ORDER);
+SymbolNum = DataNum / SC_DATA_NUM;
+
 ModDataTX = reshape(ModDataTX, SC_DATA_NUM, SymbolNum);
 Payload_f = zeros(N_SC, SymbolNum);
 

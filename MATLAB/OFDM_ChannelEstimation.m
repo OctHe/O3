@@ -16,5 +16,5 @@ LongPreambleRX_f = fft(LongPreambleRX_t, N_SC, 1);
 
 ChannelStateInfo = LongPreambleTX_f .* (LongPreambleRX_f(:, 1) + LongPreambleRX_f(:, 2))/2;
 
-ChannelStateInfo = LongPreambleTX_f .* (LongPreambleRX_f(:, 2));
+% ChannelStateInfo = LongPreambleTX_f .* (LongPreambleRX_f(:, 2));
 

@@ -1,4 +1,4 @@
-function [Responses, CSI_mW, SNRs_mW, TracesNums] = ReadTraces(FileName)
+function [Responses, CSI_mW, SNRs_mW, TracesNums] = ReadTracesFromH5(FileName)
 % Read traces from a specific H5 file
 
 global N_SC N_CP 

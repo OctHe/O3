@@ -5,7 +5,6 @@ function RawDataRX_Bin = OFDM_Demodulation(Payload_RX_f, MOD_ORDER)
 %% Params
 global SC_IND_DATA
 global DEBUG
-GlobalVariables;
 
 %% OFDM Demod
 
