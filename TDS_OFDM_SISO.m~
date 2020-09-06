@@ -1,11 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %   Trace driven simulation
-%   TODO: BER problem, the SNR-BER relationship
+%   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
 clear; close all;
 
 %% Global params
@@ -53,18 +50,7 @@ for mod_index = 6: -1: 6
     %% channel model
     OFDM_RX_Air = OFDM_TX_Air;
     
-    % % Add frequency offset
-    % OFDM_RX_Air = OFDM_RX_Air .* exp(1j * (- 2 * pi * Ts * FrequencyOffset) * ((0: (AirFrameLen -1)).'));
-
-    % % Add the channel response
-    % OFDM_RX_reshape = reshape(OFDM_RX_Air, N_CP + N_SC, []);
-    % for FrameIndex = 1: size(OFDM_RX_reshape, 2)
-    %     temp = [OFDM_RX_reshape(:, FrameIndex); OFDM_RX_reshape(:, FrameIndex)];
-    %     temp = conv(temp, Response);
-    %     temp = temp(N_CP + N_SC + 1: 2 * (N_CP + N_SC));
-    %     OFDM_RX_reshape(:, FrameIndex) = temp;
-    % end
-    % OFDM_RX_Air = reshape(OFDM_RX_reshape, [], 1);
+    % TBD: add trace files
 
     % Add the awgn channel
     OFDM_RX_Air = awgn(OFDM_RX_Air, 15, 'measured');
@@ -90,7 +76,6 @@ for mod_index = 6: -1: 6
     end
     
     %% tic toc
-
     if mod(trace_index, 100) == 0
         toc; % display transmission time
     end
@@ -99,4 +84,4 @@ end % end mod index
 end % end trans index
 
 % Save file
-save('BERs.mat', 'BERs_Mat');
+% save('BERs.mat', 'BERs_Mat');

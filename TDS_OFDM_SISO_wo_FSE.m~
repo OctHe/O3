@@ -28,7 +28,6 @@ CodeRate_Map = [2; 4; 2; 4; 2; 4; 3; 4];
 BitRate_Map = [6; 9; 12; 18; 24; 36; 48; 54]; % Mbps
     
 %% Read CSI traces
-% [Responses_linear, ~, SNRs_mW, TracesNums] = ReadTraces('Traces_mW.h5');
 [SNRs_dB, CSI, TracesNums, Timestamps] = ReadTracesFromMat('../CSITraces_low_velocity.mat');
 
 TracesNums = 1000;
