@@ -1,10 +1,11 @@
-function RawDataRX_Bin = OFDM_Demodulation(Payload_RX_f, MOD_ORDER)
+function RawDataRX_Bin = OFDM_Demodulation(Payload_RX_f, MCS_Index)
 % Matrix (N_SC, SymbolNum); scalar
 % column vector
 
 %% Params
-global SC_IND_DATA
-global DEBUG
+global SC_IND_DATA MCS_MAT
+
+Mod = MCS_MAT(1, MCS_Index);
 
 %% OFDM Demod
 
@@ -13,7 +14,7 @@ Demod_Data = Payload_RX_f(SC_IND_DATA, :);
 Demod_Data = reshape(Demod_Data, [], 1);
 
 %% BPSK demod
-switch MOD_ORDER
+switch Mod
     case 2
         RawDataRX = step(comm.BPSKDemodulator, Demod_Data);
     case 4
@@ -26,4 +27,4 @@ switch MOD_ORDER
         error('Invalid MOD_ORDER!  Must be in [2, 4, 16, 64]\n');
 end
 
-RawDataRX_Bin = Dec2BinVector(RawDataRX, log2(MOD_ORDER));
+RawDataRX_Bin = Dec2BinVector(RawDataRX, log2(Mod));

@@ -1,13 +1,14 @@
-function Payload_t = OFDM_Modulation(BinData, MOD_ORDER)
+function [Payload_t, Payload_f] = OFDM_Modulation(BinData, MCS_Index)
 % column vector; scalar
 % column vector
 
 %% Params
-global SC_IND_PILOTS SC_IND_DATA N_SC PILOTS SC_DATA_NUM
-global DEBUG
+global SC_IND_PILOTS SC_IND_DATA N_SC PILOTS SC_DATA_NUM MCS_MAT
 
-%% BPSK, QPSK, 16QAM, 64QAM modulator
-switch MOD_ORDER
+Mod = MCS_MAT(1, MCS_Index);
+
+%% BPSK, QPSK, 16QAM, and 64QAM modulator
+switch Mod
     case 2
         ModDataTX = step(comm.BPSKModulator, BinData);
     case 4
@@ -21,7 +22,7 @@ switch MOD_ORDER
 end
 
 %% OFDM modulator
-DataNum = length(BinData) / log2(MOD_ORDER);
+DataNum = length(BinData) / log2(Mod);
 SymbolNum = DataNum / SC_DATA_NUM;
 
 ModDataTX = reshape(ModDataTX, SC_DATA_NUM, SymbolNum);
@@ -29,10 +30,6 @@ Payload_f = zeros(N_SC, SymbolNum);
 
 Payload_f(SC_IND_PILOTS, :) = repmat(PILOTS, 1, SymbolNum);
 Payload_f(SC_IND_DATA, :) = ModDataTX;
-if DEBUG
-    figure();
-    plot(abs(Payload_f));
-    title('Payload Tx');
-end
+
 Payload_t = ifft(Payload_f, N_SC, 1);
-Payload_t = reshape(ifft(Payload_f, N_SC, 1), [], 1);
+Payload_t = reshape(Payload_t, [], 1);
