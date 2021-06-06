@@ -5,7 +5,6 @@ function [STF_t, LTF_t] = PreambleGenerator
 
 
 global N_SC ShortTrainingSymbol LongTrainingSymbol TONES_INDEX
-% GlobalVariables;
 
 ShortPreamble_f = zeros(N_SC, 1);
 LongPreamble_f = zeros(N_SC, 1);

@@ -4,8 +4,8 @@ function [OutputData] = OFDM_ConvolutionalCode(InputData, CodeRate, sign)
 
 global CONV_TRELLIS
 global DEBUG
-% GlobalVariables;
-TRACEBACK = 4;     % the trace back is a parameter of the convolutional decoder
+
+TRACEBACK = 4;     % The trace back is a parameter of the convolutional decoder
 
 if sign == true
     

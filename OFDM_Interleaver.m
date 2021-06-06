@@ -6,14 +6,14 @@ function OutputData = OFDM_Interleaver(InputData, Nbpsc, sign)
 
 global SC_DATA_NUM
 
-%%
+%% First step
 Ncbps = SC_DATA_NUM * Nbpsc;
 SymbolNum = length(InputData) / Ncbps;
 InputData = reshape(InputData, Ncbps, SymbolNum);
 
 OutputData = zeros(size(InputData));
 
-%%
+%% Second step
 InputIndex = (0: Ncbps - 1).';
 s = max(Nbpsc / 2, 1);
 

@@ -10,17 +10,11 @@ CODE_RATE = 2;
 
 %% convolutional code
 
-% rng(1); % generate fixed random numbers
+rng(1); % generate fixed random numbers
 InputData = randi([0, 1], 1000, 1);
 
 handle_conv = comm.ConvolutionalEncoder('TrellisStructure',  CONV_TRELLIS);
 OutputData = step(handle_conv, InputData);
-
-%% modulation
-
-%% channel
-
-%% demodulation
 
 %% convolutional decoder
 OutputData_Rx_Pad = [OutputData; zeros(TRACEBACK * CODE_RATE, 1)]; % OutputData is deconvolutional bits

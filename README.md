@@ -1,18 +1,17 @@
-# Trace Driven Simulation
-This is a trace driven simulation code for 802.11a protocol. 
-The transmission pipeline include rate adaptation, channel coding, modulation, sync, chanel estimation, demodulation.
+# Trace Driven Emulation of Rate Adaptation (TDE-RA) Project
 
-    Note: Some block such as MAC header, frame detection, synchronization with pilot need to be added.
+This is a simulation platform for the rate adaptation algorithm.
+The platform is based on MATLAB for off-line process because MATLAB has lots of useful toolbox to simplify the design.
+The platform includes basic signal process blocks in PHY layer, including channel coding, modulation, synchronization, channel estimation.
+You can design your own rate adaptation algorithm by deploying the trace-driven evaluation.
+The traces can be collected from commercial wireless devices or USRP.
 
-The function tree is
+## Supported Standard
 
-```
-TDS_OFDM_SISO.m
-|-- GlobalVariables.m
-|-- OFDM_TX_Pipeline.m
-        |
-        |
-|-- OFDM_RX_Pipeline.m
-        |
-        |
-```
+1. IEEE 802.11a standard (Legacy mode)
+
+Rate adaptation for IEEE 802.11a standard is based on the [*comm toolbox*](https://www.mathworks.com/help/comm/).
+
+2. IEEE 802.11ac standard (Very High Throughput, VHT)
+
+Rate adaptation for IEEE 802.11ac standard is based on the [*WLAN toolbox*](https://www.mathworks.com/help/wlan/).

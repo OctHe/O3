@@ -9,14 +9,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear; close all;
 
-%% Global params
-global DEBUG
-GlobalVariables;
-
-DEBUG = false;
-
 %% Simualtion variables
-Nbits       = 1e5;	% The number of bits (default: 1500 Bytes)
+Nbits       = 1e5;      % The number of bits (default: 1500 Bytes)
 Npack       = 1;        % The number of packet in each round
 FL          = 800;      % Expected frame length. 
                         % PER is related to FL and BER
@@ -24,12 +18,18 @@ SNR_MAX     = 30;       % The maximum SNR in the simulation
 BW          = 20;       % Bandwidth (MHz)
 
 FRAME_COUNT = 0;
-MCS         = 1: 8;
-SNR_Res     = 0.1;      % Resolution of SNR
+MCS         = 0: 7;
+SNR_Res     = 1;      % Resolution of SNR
 SNR_Range   = SNR_Res: SNR_Res: SNR_MAX;
 
 BER_METRICS = zeros(length(SNR_Range), length(MCS));
 PER_METRICS = zeros(length(SNR_Range), length(MCS));
+
+%% Global params
+global DEBUG
+IEEE80211a_GlobalVariables;
+
+DEBUG = false;
 
 if length(SNR_Range) > 1
     DEBUG = false;
@@ -37,7 +37,7 @@ end
 
 %% Simulation process
 for SNR_Index = SNR_Range
-for MCS_Index = MCS
+for MCS_Index = (MCS +1)
         
     %% Raw data generation
     RawBits = randi([0, 1], Nbits, 1); % randam bits
@@ -81,6 +81,7 @@ for MCS_Index = MCS
         disp(['    Frame reception failed!']);
         disp(['    BER: ' num2str(BER)]);
     end
+    disp(['*************************************']);
 
 end % end MCS
 end % end SNR
