@@ -41,20 +41,6 @@ It is implemented a SNR-based rate adaptation algorithm and a fixed rate algorit
 
 Some options in *IEEE80211ac_RA_TDE* can be used to display different results.
 
-* __traceFile__ is the file of the collected trace. The format of this file is *.mat* (i.e., the data file of MATLAB). For now, the collect trace is based on the [Atheros CSI tool](https://wands.sg/research/wifi/AtherosCSI/).
-* __traceDur__ is the time duration of the collected trace. The unit is S. For example, *traceDur = [20, 90]* indicates the channel model is built based on the collected trace from 20s to 90s.
-* __THE__ is the SNR threshold of each MCS. This parameter is used to determine the MCS in the rate adaptation algorithm.
-* __BITRATE__ is the bit rate in Mbps of each MCS. This is determined from the [Wikipedia of IEEE 802.11ac standard](https://en.wikipedia.org/wiki/IEEE_802.11ac-2013).
-
+* __traceFile__ is the file of the collected trace. The format of this file is *.mat* (i.e., the data file of MATLAB). For now, the collect trace is based on the [Atheros CSI tool]().
 
 ## Collect traces form Atheros CSI tool.
-
-For now, we only implement an interface to read the traces from the [Atheros CSI tool](https://wands.sg/research/wifi/AtherosCSI/).
-You need to install Atheros CSI tool and collects traces from the tool.
-In the CSI tool, it provides a MATLAB interface to display the csi traces by using *read_log_file*.
-After running it, you can use 
-
-    save csi
-in MATLAB to save the traces into a *csi.mat* file.
-Finally, you can input the filename into __traceFile__, and we have implemented a interface named *chModelfromTraces* to model the channel from the collected trace.
-

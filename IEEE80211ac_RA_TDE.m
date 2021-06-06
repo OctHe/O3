@@ -12,25 +12,23 @@ cfgVHT.ChannelBandwidth = 'CBW160';     % 160 MHz channel bandwidth
 cfgVHT.MCS = 0;                         % MCS = [0, ..., 9]
 cfgVHT.APEPLength = 32767;              % APEP length in bytes
 
+sampRate    = wlanSampleRate(cfgVHT);	% Sample rate in Hertz
+
 %% Simulation parameters
-byte2Bits = 8;
-s2us = 1e6;
-sampRate = wlanSampleRate(cfgVHT);      % Sample rate in Hertz
-
-traceFile = '/home/shiyue_deep/Desktop/csi.mat';
-
+traceFile   = '/home/shiyue_deep/Desktop/csi.mat';
+traceDur    = [20, 90];    % Trace duration
+interval    = 500; % Packet interval
+RA_TYPE     = "ra";  % fixed | ra
+THR         = [6.2 8.7 12.4 15.3 19.6 23.2 24.7 25.8 28];
 BITRATE = [58.5 117 175.5 234 351 468 526.5 585 702 780];
-THR = [6.2 8.7 12.4 15.3 19.6 23.2 24.7 25.8 28];
-RA_TYPE = "ra";  % fixed | ra
+
+BYTE2BIT    = 8;        % 1 Byte = 8 bits
+S2US        = 1e6;      % 1s = 1e6 us
 
 DEBUG = false;
 
-traceDur = [20, 90];    % Trace duration
-
-interval = 500; % Packet interval
-
 %% Channel model from collected traces
-[SNR, tstamp] = chModelfromTraces(traceFile, 'awgn', traceDur * s2us, 8);
+[SNR, tstamp] = chModelfromTraces(traceFile, 'awgn', traceDur * S2US, 8);
 traceNum = length(SNR);
 if traceNum > 1
     DEBUG = false;
@@ -44,7 +42,7 @@ for pktIndex = 1: traceNum
     
     %% Generate a single packet waveform
     
-    txPSDU = randi([0,1], byte2Bits*cfgVHT.PSDULength, 1 ,'int8');
+    txPSDU = randi([0,1], BYTE2BIT*cfgVHT.PSDULength, 1 ,'int8');
     
     txWave = wlanWaveformGenerator(txPSDU, cfgVHT);
     
@@ -125,7 +123,7 @@ for pktIndex = 1: traceNum
     disp(['Packet index:            ' num2str(pktIndex)]);
     disp(['Bitrate:                 ' num2str(BITRATE(pkt_mcs+1)) ' Mbps']);
     disp(['Selected MCS:            ' num2str(pkt_mcs)]);
-    disp(['Packet length:           ' num2str(s2us * packetLength) ' us']);
+    disp(['Packet length:           ' num2str(S2US * packetLength) ' us']);
     
     disp(['*******************CH INFO*******************']);
     disp(['SNR of the model:        ' num2str(SNR(pktIndex)) ' dB']);
