@@ -8,7 +8,7 @@
 % 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 
-function [snr, tstamp] = chModelfromTraces(csiFile, chModel, dur, var)
+function [snr, tstamp] = chModelfromAtherosTraces(csiFile, chModel, dur, var)
 
 %% Trace params
 load(csiFile);
