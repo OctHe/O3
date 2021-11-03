@@ -1,9 +1,27 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This function integrates convolutional encode/decode with multiple rates
+% Input: column vector, true or false; Output: column vector;
+% 
+% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
+% 
+% This program is free software: you can redistribute it and/or modify
+% it under the terms of the GNU General Public License as published by
+% the Free Software Foundation, either version 3 of the License, or
+% (at your option) any later version.
+% 
+% This program is distributed in the hope that it will be useful,
+% but WITHOUT ANY WARRANTY; without even the implied warranty of
+% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+% GNU General Public License for more details.
+% 
+% You should have received a copy of the GNU General Public License
+% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [OutputData] = OFDM_ConvolutionalCode(InputData, CodeRate, sign)
-% column vector; true or false
-% column vector;
 
 global CONV_TRELLIS
-global DEBUG
 
 TRACEBACK = 4;     % The trace back is a parameter of the convolutional decoder
 
@@ -24,10 +42,6 @@ if sign == true
             
         otherwise
             error('ERROR: CodeRate must be 2/3/4');
-    end
-    
-    if DEBUG
-        disp(['Convolutional encoder input: ' num2str(length(InputData)) '; Convolutional encoder output: ' num2str(length(OutputData)) '; CodeRate: ' num2str(length(InputData) / length(OutputData))])
     end
 
 else % if sign == false
@@ -55,8 +69,5 @@ else % if sign == false
             error('ERROR: CodeRate must be 2/3/4');
     end
     
-    if DEBUG
-        disp(['Convolutional deocder input: ' num2str(length(InputData)) '; Convolutional deocder output: ' num2str(length(OutputData)) '; CodeRate: ' num2str(length(OutputData) / length(InputData))])
-    end
 
 end % end sign
