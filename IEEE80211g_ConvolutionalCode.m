@@ -19,7 +19,7 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [OutputData] = OFDM_ConvolutionalCode(InputData, CodeRate, sign)
+function [OutputData] = IEEE80211g_ConvolutionalCode(InputData, CodeRate, sign)
 
 global CONV_TRELLIS
 

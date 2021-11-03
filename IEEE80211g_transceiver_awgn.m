@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-%   IEEE 802.11g simulation on the AWGN channel.
+% IEEE 802.11g simulation on the AWGN channel.
 %
-% Copyright (C) 2021.11.2  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -21,10 +21,11 @@
 clear; close all;
 
 %% Simualtion variables
-Nbits       = 1e5;      % The number of bits (default: 1500 Bytes)
-BW          = 20;       % Bandwidth (MHz)
-MCS         = 7;
+Nbytes      = 4096;         % The number of bits (max: 4096 Bytes)
+BW          = 20;           % Bandwidth (MHz)
+MCS         = 1;
 SNR         = 30;
+Nbits       = Nbytes * 8;
 
 IEEE80211g_GlobalVariables;
 global MCS_MAT N_SC N_CP TAIL_LEN SC_DATA_NUM CODE_RATE;
@@ -42,14 +43,14 @@ RawBits_tail = [RawBits; zeros(TAIL_LEN, 1)];
 N_PAD = Ndbs - mod(length(RawBits_tail), Ndbs);
 RawBits_pad = [RawBits_tail; zeros(N_PAD, 1)];
 
-N_sym_pld = length(RawBits_pad) / Ndbs;
+N_sym_pd = length(RawBits_pad) / Ndbs;
 
 %% Encoding
 ScrambledDataBin = step(comm.Scrambler('CalculationBase', 2, ...
                         'Polynomial', SCREAMBLE_POLYNOMIAL, ...
                         'InitialConditions', SCREAMBLE_INIT), ...
                         RawBits_pad);
-CodedDataBin = OFDM_ConvolutionalCode(ScrambledDataBin, CodeRate, true);
+CodedDataBin = IEEE80211g_ConvolutionalCode(ScrambledDataBin, CodeRate, true);
 InterleavedDataBin = IEEE80211g_Interleaver(CodedDataBin, log2(Mod), true);
 
 %% Modulation
@@ -64,22 +65,21 @@ Payload_TX_t = reshape(Payload_TX_t, [], 1);
 
 %% Preamble generation
 [STF, LTF] = PreambleGenerator;
-
 OFDM_TX = [STF; LTF; Payload_TX_t];
+
+FrameLen = length(OFDM_TX);
 
 %% Channel model: awgn channel
 OFDM_TX_Air = OFDM_TX;
 OFDM_RX_Air = awgn(OFDM_TX_Air, SNR, 'measured');
 
 %% Time synchronization
-Frame_RX_Air_Len = length(OFDM_RX_Air);
-
 [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_RX_Air);
 FrameIndex = PayloadIndex - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP);
 
-OFDM_RX = OFDM_RX_Air(FrameIndex: FrameIndex + Frame_RX_Air_Len - 1);
+OFDM_RX = OFDM_RX_Air(FrameIndex +1: FrameIndex + FrameLen);
 LongPreambleRX_t = OFDM_RX(2 * (N_CP + N_SC) + 2 * N_CP + 1: 4 * (N_CP + N_SC));
-Payload_RX_t = OFDM_RX(PayloadIndex: PayloadIndex + Frame_RX_Air_Len - 1 - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
+Payload_RX_t = OFDM_RX(PayloadIndex +1: PayloadIndex + FrameLen - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
 
 %% CSI estimation
 [~,  LongPreambleTX_t] = PreambleGenerator; 
@@ -106,7 +106,7 @@ InterleavedDataBin_Rx = IEEE80211g_Demodulation(Payload_RX_f, MCS);
 
 %% Decoding
 CodedDataBin_Rx = IEEE80211g_Interleaver(InterleavedDataBin_Rx, log2(Mod), false);
-ScrambledDataBin_Rx = OFDM_ConvolutionalCode(CodedDataBin_Rx, CodeRate, false);
+ScrambledDataBin_Rx = IEEE80211g_ConvolutionalCode(CodedDataBin_Rx, CodeRate, false);
 RawDataBin_Rx = step(comm.Descrambler('CalculationBase', 2, ...
                                         'Polynomial', SCREAMBLE_POLYNOMIAL, ...
                                         'InitialConditions', SCREAMBLE_INIT), ...
@@ -149,7 +149,7 @@ plot(abs(ifft(CSI)));
 title('Channel response');
 
 disp(['***************TX INFO***************']);
-disp(['    The number of payload symbols: ' num2str(N_sym_pld)]);
+disp(['    The number of payload symbols: ' num2str(N_sym_pd)]);
 disp(['    Transmission time: ' num2str(length(OFDM_TX_Air) / BW) ' us']);
 
 disp(['**********AWGN Channel Model*********']);

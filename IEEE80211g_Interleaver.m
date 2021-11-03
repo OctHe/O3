@@ -6,7 +6,7 @@
 %       sign = true means add cp, sign = false means remove cp;
 % Output: column vector with cp;
 % 
-% Copyright (C) 2021.11.2  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.02  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by

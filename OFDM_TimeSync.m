@@ -5,7 +5,7 @@
 % SyncResult: column vector; 
 % PayloadIndex: long preamble w/o CP; scalar
 %
-% Copyright (C) 2017  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -36,6 +36,5 @@ end
 SyncResult = SyncResult ./ (LongPreambleTX' * LongPreambleTX);    % Normalized to one
 [~, PayloadIndex] = max(abs(SyncResult)); 
 
-PayloadIndex = PayloadIndex + 1;
 
 

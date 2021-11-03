@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% This file gives common paramters for IEEE 802.11g protocol
+% This file gives common paramters for IEEE 802.11a/g protocol
 % 
 % Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
 % 
