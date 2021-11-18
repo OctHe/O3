@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% IEEE 802.11g simulation on the AWGN channel.
+% IEEE 802.11g simulation on the Rician channel.
 %
 % Copyright (C) 2021.11.18  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -21,14 +21,19 @@
 clear; close all;
 
 %% Simualtion variables
+MHz         = 1e6;          % 1MHz
+
 Nbytes      = 4096;         % The number of bits (max: 4096 Bytes)
-BW          = 20;           % Bandwidth (MHz)
-MCS         = 1;
-SNR         = 30;
+BW          = 20 * MHz;     % Bandwidth (20 MHz)
+MCS         = 7;
 Nbits       = Nbytes * 8;
+Nzeros      = 100;
+path_delays = [0, 0.05] / MHz;
+avg_gains   = [10, 1];
+doppler     = 5;            % Doppler shift is around 5 Hz
 
 IEEE80211g_GlobalVariables;
-global MCS_MAT N_SC N_CP TAIL_LEN SC_DATA_NUM CODE_RATE;
+global MCS_MAT N_SC N_CP TAIL_LEN SC_DATA_NUM CODE_RATE SC_IND_DATA;
 global LONG_PREAMBLE_LEN GUARD_SC_INDEX SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT;
 
 %% Raw data generation
@@ -69,16 +74,26 @@ OFDM_TX = [STF; LTF; Payload_TX_t];
 
 FrameLen = length(OFDM_TX);
 
-%% Channel model: awgn channel
-OFDM_RX_Air = awgn(OFDM_TX, SNR, 'measured');
+%% Channel model: Rician channel
+OFDM_TX_Air = [zeros(Nzeros, 1); OFDM_TX; zeros(Nzeros, 1)];
+
+ricianchan = comm.RicianChannel(...
+            'SampleRate', BW,...
+            'PathDelays', path_delays,...
+            'AveragePathGains', avg_gains,...
+            'NormalizePathGains', false,...
+            'DirectPathDopplerShift', doppler,...
+            'MaximumDopplerShift', 50,...
+            'PathGainsOutputPort', true);
+
+[OFDM_RX_Air, path_gains] = ricianchan(OFDM_TX_Air);
 
 %% Time synchronization
 [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_RX_Air);
 FrameIndex = PayloadIndex - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP);
 
-OFDM_RX = OFDM_RX_Air(FrameIndex +1: FrameIndex + FrameLen);
-LongPreambleRX_t = OFDM_RX(2 * (N_CP + N_SC) + 2 * N_CP + 1: 4 * (N_CP + N_SC));
-Payload_RX_t = OFDM_RX(PayloadIndex +1: PayloadIndex + FrameLen - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
+LongPreambleRX_t = OFDM_RX_Air(FrameIndex + 2 * (N_CP + N_SC) + 2 * N_CP + 1: FrameIndex + 4 * (N_CP + N_SC));
+Payload_RX_t = OFDM_RX_Air(PayloadIndex +1: PayloadIndex + FrameLen - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
 
 %% CSI estimation
 [~,  LongPreambleTX_t] = PreambleGenerator; 
@@ -98,11 +113,12 @@ Payload_RX_t = reshape(Payload_RX_t, N_CP + N_SC, SymbolNum);
 Payload_RX_t = Payload_RX_t(N_CP + 1: end, :);
 
 %% Channel equalization
-Payload_RX_f = fft(Payload_RX_t, N_SC, 1) ./ repmat(CSI, 1, SymbolNum);
-Payload_RX_f(GUARD_SC_INDEX, :) = zeros(length(GUARD_SC_INDEX), SymbolNum);
+[Payload_RX_f, PhaseOffset] = IEEE80211g_ChannelEqualizer(Payload_RX_t, CSI);
 
 %% OFDM demodulation
 InterleavedDataBin_Rx = IEEE80211g_Demodulation(Payload_RX_f, MCS);
+
+Payload_RX_f = reshape(Payload_RX_f(SC_IND_DATA, :), [], 1);
 
 %% Decoding
 CodedDataBin_Rx = IEEE80211g_Interleaver(InterleavedDataBin_Rx, log2(Mod), false);
@@ -119,18 +135,14 @@ RawDataBin_Rx = RawDataBin_Rx(1: Nbits);
 ErrorPosition = xor(RawDataBin_Rx, RawBits);
 BER = sum(ErrorPosition) / Nbits;
 
-clc;
-
-figure();
-plot(abs(Payload_TX_f));
-title('Payload Tx');
+figure;
+plot((0: FrameLen+2*Nzeros-1) / BW / MHz, abs(path_gains));
+ylim([0, 10]);
+title('Gains of each path in the Rician channel');
 
 figure;
 plot(abs(SyncResult));
 title('Correlation result');
-
-disp(['The frame start index: ' num2str(FrameIndex)])
-disp(['The payload start index: ' num2str(PayloadIndex)])
 
 figure; hold on; 
 plot(abs(LongPreambleRX_t(1: N_SC)));
@@ -148,14 +160,33 @@ subplot(313);
 plot(abs(ifft(CSI)));
 title('Channel response');
 
+figure;
+plot(angle(PhaseOffset.'));
+title('Phase offest of each symbol at pilots');
+
+figure; hold on;
+scatter(real(Payload_RX_f), imag(Payload_RX_f));
+xlim([-3, 3]); ylim([-3, 3]);
+title('Constellation of RX payload');
+
+clc;
 disp(['***************TX INFO***************']);
 disp(['    The number of payload symbols: ' num2str(N_sym_pd)]);
-disp(['    Transmission time: ' num2str(length(OFDM_TX) / BW) ' us']);
+disp(['    Transmission time: ' num2str(FrameLen / BW / MHz) ' us']);
 
-disp(['**********AWGN Channel Model*********']);
-disp(['    SNR: ' num2str(SNR) ' dB']);
+disp(['*********Rician Channel Model********']);
+disp(['    Path delays: [' num2str(path_delays) '] s']);
+disp(['    Path Gains: [' num2str(avg_gains) '] dB']);
+disp(['    Maximum Doppler shift: ' num2str(doppler) ' Hz']);
 
 disp(['***************Res INFO**************']);
+disp(['    The frame start index: ' num2str(FrameIndex)]);
+if FrameIndex == Nzeros
+    disp(['    Time synchronization successful!']);
+else
+    disp(['    Time synchronization error: ' num2str(FrameIndex - Nzeros)]);
+end
+
 if BER == 0
     disp(['    Frame reception successful!']);
 else

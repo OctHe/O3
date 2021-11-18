@@ -5,7 +5,7 @@
 %   802.11a/g standard.
 %   BER is obtained by the Monto Carlo simultion. 
 %
-% Copyright (C) 2021.11.3  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.18  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ SNR_TABLE   = 1: 1: 30;
 BER_METRICS = zeros(length(SNR_TABLE), length(MCS_INDEX));
 
 %% Global params
-% IEEE80211g_GlobalVariables;
+IEEE80211g_GlobalVariables;
 global MCS_MAT N_SC N_CP TAIL_LEN SC_DATA_NUM CODE_RATE;
 global LONG_PREAMBLE_LEN GUARD_SC_INDEX SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT;
 
@@ -97,13 +97,14 @@ for MCS = (MCS_INDEX +1)
     LongPreambleRX_f = fft(LongPreambleRX_t, N_SC, 1);
 
     CSI = LongPreambleTX_f .* (LongPreambleRX_f(:, 1) + LongPreambleRX_f(:, 2))/2;
+    CSI(GUARD_SC_INDEX) = zeros(size(GUARD_SC_INDEX));
 
     %% Remove CP
     SymbolNum = size(Payload_RX_t, 1) / (N_CP + N_SC);
     Payload_RX_t = reshape(Payload_RX_t, N_CP + N_SC, SymbolNum);
     Payload_RX_t = Payload_RX_t(N_CP + 1: end, :);
 
-    %% Chanel equalization
+    %% Channel equalization
     Payload_RX_f = fft(Payload_RX_t, N_SC, 1) ./ repmat(CSI, 1, SymbolNum);
     Payload_RX_f(GUARD_SC_INDEX, :) = zeros(length(GUARD_SC_INDEX), SymbolNum);
 
@@ -152,4 +153,4 @@ end % end SNR
 
 figure;
 plot(SNR_TABLE, BER_METRICS);
-title('BER at different SNR');
+title('BER at different SNRs');

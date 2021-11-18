@@ -7,12 +7,20 @@ It includes basic signal process blocks, such as channel coding, modulation/demo
 ## Supported Standard
 
 For now, this project supports IEEE 802.11a/g standard.
-Note that IEEE 802.11a and IEEE 802.11g have the same PHY design, 
-while IEEE 802.11a works at 5G Hz band and IEEE 802.11g works at 2.4G Hz band.
+Note that IEEE 802.11a works at 5G Hz band and IEEE 802.11g works at 2.4G Hz band with the same PHY layer.
 
-You can run 
+## Examples
 
-    IEEE80211g_BERvsSNR.m
+sim80211 give lots of examples to show the simulation results.
 
-to get the BER vs SNR curve.
+### BER vs SNR curve
 
+    IEEE80211g_BERvsSNR
+
+### IEEE 802.11a/g at AWGN channel
+
+    IEEE80211g_transceiver_rician
+
+### IEEE 802.11a/g at Rician channel
+
+    IEEE80211g_transceiver_rician
