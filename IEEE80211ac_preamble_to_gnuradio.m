@@ -1,11 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Fine time synchronization using long preambles with cross correlation
-% OFDM_Frame_RX: column vector
-% SyncResult: column vector; 
-% PayloadIndex: long preamble w/o CP; scalar
+% Write preambles to file
 %
-% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.22  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -21,20 +18,31 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_Frame_RX)
+clear;
+close all;
 
-global N_CP LONG_PREAMBLE_LEN
+%% Variables
+bw = 1;    % 20 MHz
 
-[~,  LongPreambleTX] = IEEE80211g_PreambleGenerator; 
-LongPreambleTX = LongPreambleTX(2*N_CP+1: end);
+IEEE80211ac_GlobalVariables;
 
-SyncSize = LONG_PREAMBLE_LEN; 
-SyncResult = zeros(size(OFDM_Frame_RX));
-for index = SyncSize : size(OFDM_Frame_RX, 1)
-    SyncResult(index, :) = LongPreambleTX' * OFDM_Frame_RX(index - SyncSize + 1: index, :);
-end
-SyncResult = SyncResult ./ (LongPreambleTX' * LongPreambleTX);    % Normalized to one
-[~, PayloadIndex] = max(abs(SyncResult)); 
+%% Preambles
+[STF_t, LTF_t] = IEEE80211ac_PreambleGenerator(bw);
 
+stream = [STF_t; LTF_t];
+fid = fopen('~/Desktop/ieee80211_preamble.bin', 'w');
 
+bins = reshape([real(stream), imag(stream)].', [], 1);
 
+fwrite(fid, bins, 'float');
+
+fclose(fid);
+
+%% Figures
+figure;
+plot(abs(STF_t));
+title('STF');
+
+figure;
+plot(abs(LTF_t));
+title('LTF');

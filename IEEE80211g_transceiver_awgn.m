@@ -64,7 +64,7 @@ Payload_TX_t = [Payload_TX_t(N_SC - N_CP +1: N_SC, :); Payload_TX_t];
 Payload_TX_t = reshape(Payload_TX_t, [], 1);
 
 %% Preamble generation
-[STF, LTF] = PreambleGenerator;
+[STF, LTF] = IEEE80211g_PreambleGenerator;
 OFDM_TX = [STF; LTF; Payload_TX_t];
 
 FrameLen = length(OFDM_TX);
@@ -81,7 +81,7 @@ LongPreambleRX_t = OFDM_RX(2 * (N_CP + N_SC) + 2 * N_CP + 1: 4 * (N_CP + N_SC));
 Payload_RX_t = OFDM_RX(PayloadIndex +1: PayloadIndex + FrameLen - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
 
 %% CSI estimation
-[~,  LongPreambleTX_t] = PreambleGenerator; 
+[~,  LongPreambleTX_t] = IEEE80211g_PreambleGenerator; 
 LongPreambleTX_t = LongPreambleTX_t(2 * N_CP + N_SC + 1: end);
 
 LongPreambleRX_t = reshape(LongPreambleRX_t, N_SC, 2);

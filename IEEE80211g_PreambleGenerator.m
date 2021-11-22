@@ -1,9 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Fine time synchronization using long preambles with cross correlation
-% OFDM_Frame_RX: column vector
-% SyncResult: column vector; 
-% PayloadIndex: long preamble w/o CP; scalar
+% Preamble Generation for IEEE 802.11. Now it supports IEEE 802.11a
+% STF_t(Legend): (N_CP + N_CP + N_SC + N_SC, 1);
+% LTF_t(Legend): (N_CP + N_CP + N_SC + N_SC, 1);
 %
 % Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -21,20 +20,18 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_Frame_RX)
+function [STF_t, LTF_t] = IEEE80211g_PreambleGenerator
 
-global N_CP LONG_PREAMBLE_LEN
+global N_SC ShortTrainingSymbol LongTrainingSymbol TONES_INDEX
 
-[~,  LongPreambleTX] = IEEE80211g_PreambleGenerator; 
-LongPreambleTX = LongPreambleTX(2*N_CP+1: end);
+ShortPreamble_f = zeros(N_SC, 1);
+LongPreamble_f = zeros(N_SC, 1);
 
-SyncSize = LONG_PREAMBLE_LEN; 
-SyncResult = zeros(size(OFDM_Frame_RX));
-for index = SyncSize : size(OFDM_Frame_RX, 1)
-    SyncResult(index, :) = LongPreambleTX' * OFDM_Frame_RX(index - SyncSize + 1: index, :);
-end
-SyncResult = SyncResult ./ (LongPreambleTX' * LongPreambleTX);    % Normalized to one
-[~, PayloadIndex] = max(abs(SyncResult)); 
+ShortPreamble_f(TONES_INDEX) = ShortTrainingSymbol;
+LongPreamble_f(TONES_INDEX) = LongTrainingSymbol;
 
+ShortPreamble_t = ifft(ShortPreamble_f);
+LongPreamble_t = ifft(LongPreamble_f);
 
-
+STF_t = [ShortPreamble_t(N_SC/2+1: N_SC); ShortPreamble_t; ShortPreamble_t];
+LTF_t = [LongPreamble_t(N_SC/2+1: N_SC); LongPreamble_t; LongPreamble_t];

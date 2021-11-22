@@ -1,11 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Fine time synchronization using long preambles with cross correlation
-% OFDM_Frame_RX: column vector
-% SyncResult: column vector; 
-% PayloadIndex: long preamble w/o CP; scalar
+% Channel Estimation with zero forcing
+% LongPreambleRX_t: column vector
+% CSI: column vector
 %
-% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.11.18  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -21,20 +20,17 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_Frame_RX)
+function CSI = OFDM_ChannelEstimator(LongPreambleRX_t)
 
-global N_CP LONG_PREAMBLE_LEN
+global N_CP N_SC GUARD_SC_INDEX
 
-[~,  LongPreambleTX] = IEEE80211g_PreambleGenerator; 
-LongPreambleTX = LongPreambleTX(2*N_CP+1: end);
+[~,  LongPreambleTX_t] = IEEE80211g_PreambleGenerator; 
+LongPreambleTX_t = LongPreambleTX_t(2 * N_CP + N_SC + 1: end);
 
-SyncSize = LONG_PREAMBLE_LEN; 
-SyncResult = zeros(size(OFDM_Frame_RX));
-for index = SyncSize : size(OFDM_Frame_RX, 1)
-    SyncResult(index, :) = LongPreambleTX' * OFDM_Frame_RX(index - SyncSize + 1: index, :);
-end
-SyncResult = SyncResult ./ (LongPreambleTX' * LongPreambleTX);    % Normalized to one
-[~, PayloadIndex] = max(abs(SyncResult)); 
+LongPreambleRX_t = reshape(LongPreambleRX_t, N_SC, 2);
 
+LongPreambleTX_f = fft(LongPreambleTX_t, N_SC, 1);
+LongPreambleRX_f = fft(LongPreambleRX_t, N_SC, 1);
 
-
+CSI = LongPreambleTX_f .* (LongPreambleRX_f(:, 1) + LongPreambleRX_f(:, 2))/2;
+CSI(GUARD_SC_INDEX) = zeros(size(GUARD_SC_INDEX));

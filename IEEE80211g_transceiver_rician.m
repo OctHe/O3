@@ -28,13 +28,23 @@ BW          = 20 * MHz;     % Bandwidth (20 MHz)
 MCS         = 7;
 Nbits       = Nbytes * 8;
 Nzeros      = 100;
-path_delays = [0, 0.05] / MHz;
-avg_gains   = [10, 1];
+path_delays = [0, 0.1, 0.2] / MHz;
+avg_gains   = [10, 1, 1];
+SNR         = 30;
 doppler     = 5;            % Doppler shift is around 5 Hz
+
+ricianchan = comm.RicianChannel(...
+            'SampleRate', BW,...
+            'PathDelays', path_delays,...
+            'AveragePathGains', avg_gains,...
+            'NormalizePathGains', false,...
+            'DirectPathDopplerShift', doppler,...
+            'MaximumDopplerShift', 50,...
+            'PathGainsOutputPort', true);
 
 IEEE80211g_GlobalVariables;
 global MCS_MAT N_SC N_CP TAIL_LEN SC_DATA_NUM CODE_RATE SC_IND_DATA;
-global LONG_PREAMBLE_LEN GUARD_SC_INDEX SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT;
+global LONG_PREAMBLE_LEN SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT;
 
 %% Raw data generation
 Mod = MCS_MAT(1, MCS);
@@ -69,24 +79,16 @@ Payload_TX_t = [Payload_TX_t(N_SC - N_CP +1: N_SC, :); Payload_TX_t];
 Payload_TX_t = reshape(Payload_TX_t, [], 1);
 
 %% Preamble generation
-[STF, LTF] = PreambleGenerator;
+[STF, LTF] = IEEE80211g_PreambleGenerator;
 OFDM_TX = [STF; LTF; Payload_TX_t];
 
 FrameLen = length(OFDM_TX);
 
-%% Channel model: Rician channel
+%% Channel model: Rician channel, following AWGN channel with noise
 OFDM_TX_Air = [zeros(Nzeros, 1); OFDM_TX; zeros(Nzeros, 1)];
 
-ricianchan = comm.RicianChannel(...
-            'SampleRate', BW,...
-            'PathDelays', path_delays,...
-            'AveragePathGains', avg_gains,...
-            'NormalizePathGains', false,...
-            'DirectPathDopplerShift', doppler,...
-            'MaximumDopplerShift', 50,...
-            'PathGainsOutputPort', true);
-
 [OFDM_RX_Air, path_gains] = ricianchan(OFDM_TX_Air);
+OFDM_RX_Air = awgn(OFDM_RX_Air, SNR, 'measured');
 
 %% Time synchronization
 [SyncResult, PayloadIndex] = OFDM_TimeSync(OFDM_RX_Air);
@@ -96,16 +98,7 @@ LongPreambleRX_t = OFDM_RX_Air(FrameIndex + 2 * (N_CP + N_SC) + 2 * N_CP + 1: Fr
 Payload_RX_t = OFDM_RX_Air(PayloadIndex +1: PayloadIndex + FrameLen - 2 * (LONG_PREAMBLE_LEN + 2 * N_CP));
 
 %% CSI estimation
-[~,  LongPreambleTX_t] = PreambleGenerator; 
-LongPreambleTX_t = LongPreambleTX_t(2 * N_CP + N_SC + 1: end);
-
-LongPreambleRX_t = reshape(LongPreambleRX_t, N_SC, 2);
-
-LongPreambleTX_f = fft(LongPreambleTX_t, N_SC, 1);
-LongPreambleRX_f = fft(LongPreambleRX_t, N_SC, 1);
-
-CSI = LongPreambleTX_f .* (LongPreambleRX_f(:, 1) + LongPreambleRX_f(:, 2))/2;
-CSI(GUARD_SC_INDEX) = zeros(size(GUARD_SC_INDEX));
+CSI = OFDM_ChannelEstimator(LongPreambleRX_t);
 
 %% Remove CP
 SymbolNum = size(Payload_RX_t, 1) / (N_CP + N_SC);
@@ -136,7 +129,7 @@ ErrorPosition = xor(RawDataBin_Rx, RawBits);
 BER = sum(ErrorPosition) / Nbits;
 
 figure;
-plot((0: FrameLen+2*Nzeros-1) / BW / MHz, abs(path_gains));
+plot((0: FrameLen+2*Nzeros-1) / BW, abs(path_gains));
 ylim([0, 10]);
 title('Gains of each path in the Rician channel');
 
@@ -172,20 +165,16 @@ title('Constellation of RX payload');
 clc;
 disp(['***************TX INFO***************']);
 disp(['    The number of payload symbols: ' num2str(N_sym_pd)]);
-disp(['    Transmission time: ' num2str(FrameLen / BW / MHz) ' us']);
+disp(['    Transmission time: ' num2str(FrameLen / BW) ' us']);
 
 disp(['*********Rician Channel Model********']);
+disp(['    SNR: ' num2str(SNR) ' dB']);
 disp(['    Path delays: [' num2str(path_delays) '] s']);
 disp(['    Path Gains: [' num2str(avg_gains) '] dB']);
 disp(['    Maximum Doppler shift: ' num2str(doppler) ' Hz']);
 
 disp(['***************Res INFO**************']);
 disp(['    The frame start index: ' num2str(FrameIndex)]);
-if FrameIndex == Nzeros
-    disp(['    Time synchronization successful!']);
-else
-    disp(['    Time synchronization error: ' num2str(FrameIndex - Nzeros)]);
-end
 
 if BER == 0
     disp(['    Frame reception successful!']);

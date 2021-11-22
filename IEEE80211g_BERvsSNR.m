@@ -77,7 +77,7 @@ for MCS = (MCS_INDEX +1)
     Payload_TX_cp = reshape(Payload_TX_cp, [], 1);
 
     %% Preamble generation
-    [STF, LTF] = PreambleGenerator;
+    [STF, LTF] = IEEE80211g_PreambleGenerator;
     OFDM_TX = [STF; LTF; Payload_TX_cp];
 
     %% Channel model: awgn channel
@@ -88,7 +88,7 @@ for MCS = (MCS_INDEX +1)
     Payload_RX_t = OFDM_RX(2 * (LONG_PREAMBLE_LEN + 2 * N_CP) +1: end);
 
     %% CSI estimation
-    [~,  LongPreambleTX_t] = PreambleGenerator; 
+    [~,  LongPreambleTX_t] = IEEE80211g_PreambleGenerator; 
     LongPreambleTX_t = LongPreambleTX_t(2 * N_CP + N_SC + 1: end);
 
     LongPreambleRX_t = reshape(LongPreambleRX_t, N_SC, 2);
