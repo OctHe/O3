@@ -2,7 +2,7 @@
 %
 % Write preambles to file
 %
-% Copyright (C) 2021.11.22  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.12.11  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -23,26 +23,22 @@ close all;
 
 %% Variables
 bw = 1;    % 20 MHz
+Nzeros = 0;
 
-IEEE80211ac_GlobalVariables;
+IEEE80211ac_GlobalVariables(bw);
 
 %% Preambles
-[STF_t, LTF_t] = IEEE80211ac_PreambleGenerator(bw);
+[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(1);
 
-stream = [STF_t; LTF_t];
-fid = fopen('~/Desktop/ieee80211_preamble.bin', 'w');
+stream = [zeros(Nzeros, 1); STF; LTF; zeros(Nzeros, 1)];
 
 bins = reshape([real(stream), imag(stream)].', [], 1);
-
+fid = fopen('ieee80211ac_preamble.bin', 'w');
 fwrite(fid, bins, 'float');
-
 fclose(fid);
 
 %% Figures
-figure;
-plot(abs(STF_t));
-title('STF');
-
-figure;
-plot(abs(LTF_t));
-title('LTF');
+figure; hold on
+plot(real(stream));
+plot(imag(stream));
+title('Stream');

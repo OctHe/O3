@@ -1,34 +1,32 @@
 # sim80211
 
-This is a simulation platform for the physical layer of IEEE 802.11 standard.
-The platform is based on MATLAB for off-line process because MATLAB has lots of useful toolbox to simplify the design.
+## Introduction
+This is a simulation for the physical layer of IEEE 802.11a/g/n/ac standard.
 It includes basic signal process blocks, such as channel coding, modulation/demodulation, channel estimation.
 
-## Supported Standard
+## Script for sim80211
 
-For now, this project supports IEEE 802.11a/g/n/ac standard.
-Note that IEEE 802.11a works at 5G Hz band and IEEE 802.11g works at 2.4G Hz band with the same PHY layer.
+sim80211 give lots of scripts to show different types of simulation results.
 
-IEEE 802.11n/ac use a different PHY layer with 56 subcarriers, so we rewrite new files for them.
+### Simulation
 
-## Simulations
+The simulation script can plot the curve of transmission results, such as
 
-sim80211 give lots of examples to show the simulation results.
+    simulation_BERvsSNR
 
-The curve of BER vs SNR can be found when running
+### Transceiver
 
-    IEEE80211g_BERvsSNR
+trasceiver scripts give one-shot transmission of IEEE 802.11a/g standard with different channel modlels.
 
-On-shot transmission of IEEE 802.11a/g with different channel models can be found:
-
-    IEEE80211g_transceiver_awgn
-    IEEE80211g_transceiver_rician
+    transceiver_awgn
+    transceiver_rician
 
 ## Files for GNURadio
 
-sim80211 provides a tool to generate signals of IEEE 802.11 standard, which can directly as an input file to GNURadio with file sink.
+sim80211 provides a tool to generate indicated signals of IEEE 802.11 standard.
+The files are compatible with the *file source* block for GNURadio 3.7.11.
 
 As an example, you can run
     
-    IEEE80211ac_preamble_to_gnuradio.m
+    tool_preamble_to_gnuradio
 

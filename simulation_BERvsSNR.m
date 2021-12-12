@@ -1,11 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 %   OFDM simulation on the AWGN channel.
-%   It can plot the BER vs SNR and PER vs SNR of different MCSs in IEEE 
+%   It can plot the BER vs SNR of different MCSs in IEEE 
 %   802.11a/g standard.
-%   BER is obtained by the Monto Carlo simultion. 
 %
-% Copyright (C) 2021.11.18  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -25,14 +24,13 @@ clear; close all;
 
 %% Simualtion variables
 Nbits       = 32768;        % The number of bits (max: 4096 Bytes)
-Npack       = 1;        % The number of packet in each round
 BW          = 20;       % Bandwidth (MHz)
 
 FRAME_COUNT = 0;
 MCS_INDEX   = 0: 7;
 SNR_TABLE   = 1: 1: 30;
 
-BER_METRICS = zeros(length(SNR_TABLE), length(MCS_INDEX));
+BER = zeros(length(SNR_TABLE), length(MCS_INDEX));
 
 %% Global params
 IEEE80211g_GlobalVariables;
@@ -126,8 +124,8 @@ for MCS = (MCS_INDEX +1)
     FRAME_COUNT = FRAME_COUNT + 1;
     
     ErrorPosition = xor(RawDataBin_Rx, RawBits);
-    BER = sum(ErrorPosition) / Nbits;
-    BER_METRICS(SNR, MCS) = BER;
+    ber_each_pkt = sum(ErrorPosition) / Nbits;
+    BER(SNR, MCS) = ber_each_pkt;
     
     %% Display the transmission details
     clc;
@@ -140,11 +138,11 @@ for MCS = (MCS_INDEX +1)
     disp(['    SNR: ' num2str(SNR) ' dB']);
 
     disp(['***************Res INFO**************']);
-    if BER == 0
+    if ber_each_pkt == 0
         disp(['    Frame reception successful!']);
     else
         disp(['    Frame reception failed!']);
-        disp(['    BER: ' num2str(BER)]);
+        disp(['    BER: ' num2str(ber_each_pkt)]);
     end
     disp(['*************************************']);
 
@@ -152,5 +150,5 @@ end % end MCS
 end % end SNR
 
 figure;
-plot(SNR_TABLE, BER_METRICS);
+plot(SNR_TABLE, BER);
 title('BER at different SNRs');

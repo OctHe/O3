@@ -1,8 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % This file gives common paramters for IEEE 802.11n/ac protocol
+% bw: bandwidth (1: 20 MHz; 2: 40 MHz)
 % 
-% Copyright (C) 2021.11.22  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,39 +19,69 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function IEEE80211ac_GlobalVariables
+function IEEE80211ac_GlobalVariables(bw)
 
-%% Frame structure in IEEE 802.11g protocol
-global N_FFT N_SC N_CP N_STF N_DATA
-N_FFT                   = 64;           % FFT length
-N_SC                    = 56;        	% Number of tones
-N_CP                    = 16;           % Cyclic prefix length
-N_STF                   = 160;          % STF length; 16 * 10
-N_DATA                  = 52;
+%% Frame structure
+global N_FFT N_PILOT N_SYNC N_CP N_STF N_LTF N_DATA
+switch bw
+    case 1	% 20 MHz
+        N_FFT       = 64;           % FFT size
+        N_PILOT     = 4;        	% Number of pilots
+        N_DATA      = 52;           % Number of data subcarriers
+        N_SYNC      = 56;           % Number of STS and LTS
+        N_CP        = 16;           % Cyclic prefix length
+        N_STF       = 160;          % STF length; 16 * 10
+        N_LTF       = 160;          % LTF length: 32 +2 * 64
 
+    otherwise
+        error('ERROR: bw must be [1]');
+        
+end
 %% Subcarriers
-global  PILOT_INDEX DATA_INDEX SC_INDEX GUARD_INDEX
-SC_INDEX 	= [5: 32, 34: 61];                              % Non-zero subcarriers indices: [-28: -1, 1:28]
-DATA_INDEX  = [5:11, 13:25, 27:32, 34:39, 41:53, 55:61];    % Data subcarrier indices
-PILOT_INDEX = [12 26 40 54];                                % Pilot subcarrier indices: [-21, -7, 7, 21]
-GUARD_INDEX = [1: 4, 33,  62: 64];
+global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX SYNC_INDEX
+DC_INDEX = 33;
+PILOT_INDEX = DC_INDEX + [-21, -7, 7, 21];
+GUARD_INDEX = DC_INDEX + [-32:-29, 29:31];
+DATA_INDEX  = DC_INDEX + [-28:-22, -20:-8, -6:-1, 1:6, 8:20, 22:28];
+SYNC_INDEX  = DC_INDEX + [-28:-1, 1:28];
 
 %% Preambles and pilot
-global STS LTS PILOTS_20
+global STS LTS PILOTS CYCLIC_SHIFT P_HT_LTF
 STS = sqrt(1/2)* ...
     [ 0 0 0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 ...	% subcarriers -28 : -1  
       0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0 0].';	% subcarriers 1 : 28
-              
-% L_STS_40 = [STS_20; zeros(11, 1); STS_20];         
+                    
 LTS = sqrt(1/2)* ...
     [ 1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1 ...  subcarriers -28 : -1
-      1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1 -1 -1 ];	% subcarriers 1 : 28
-                   
-PILOTS_20 = ...        % Ref to Table 19-19 in IEEE 802.11ac standard
-    [ 1,  1,  1, -1;
-      1,  1, -1, -1;
-      1,  1, -1, -1;
-      1,  1,  1, -1 ].';
+      1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1 -1 -1 ].';	% subcarriers 1 : 28
+
+
+% Refer to Table 19-19 in IEEE 802.11ac standard
+PILOTS{1} = [ 1,  1,  1, -1 ];  % 1 antenna;  transmit chain 1
+PILOTS{2} = [ 1,  1, -1, -1     % 2 antennas; transmit chain 1
+              1, -1, -1,  1 ];  % 2 antennas; transmit chain 2
+PILOTS{3} = [ 1,  1, -1, -1;    % 3 antennas; transmit chain 1
+              1, -1,  1, -1;    % 3 antennas; transmit chain 2
+             -1,  1,  1, -1 ];  % 3 antennas; transmit chain 3
+PILOTS{4} = [ 1,  1,  1, -1;    % 4 antennas; transmit chain 1
+              1,  1, -1,  1;    % 4 antennas; transmit chain 2
+              1, -1,  1,  1;    % 4 antennas; transmit chain 3
+             -1,  1,  1,  1 ];  % 4 antennas; transmit chain 4
+
+% Cyclic shift in samples (right shift)
+% Refer to Table 19-10 in IEEE 802.11ac standard
+CYCLIC_SHIFT{1} = 0;
+CYCLIC_SHIFT{2} = [0, 8];
+CYCLIC_SHIFT{3} = [0, 8, 4];
+CYCLIC_SHIFT{4} = [0, 8, 4, 12];
+
+% HT-LTF mapping matrix
+P_HT_LTF = [ 1, -1,  1,  1;
+             1,  1, -1,  1;
+             1,  1,  1, -1;
+            -1,  1,  1,  1 ];
+
+% Spatial mapping: Direct mapping
 
 %% MCS map in IEEE 802.11g standard
 global MCS_MAT
