@@ -1,6 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Waveform for preambles
+% Fine time synchronization using LTF (without CP) with cross correlation
+% RX_frame: RX Frame (column vector)
+% LTF: LTF without CP (column vector)
+% sync_results: cross-correlation results of RX_frame (column vector) 
+% LTF_index: symbol sync index (scalar)
 %
 % Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -18,23 +22,19 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear all;
-close all;
+function [sync_results, LTF_index] = IEEE80211ac_SymbolSync(RX_frame, LTF)
 
-%% Variables
-bw = 1;    % [1/2] = [20/40] MHz
-Ntx = 1;
+global N_FFT
 
-IEEE80211ac_GlobalVariables(bw);
-
-%% Preambles
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntx);
-
-%% Figures
-figure;
-for itx = 1: Ntx
-    subplot(Ntx, 1, itx); hold on;
-    plot(real([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
-    plot(imag([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
-    title(['Transmit chain ' num2str(itx)]);
+SyncSize = 2 * N_FFT; 
+sync_results = zeros(size(RX_frame));
+for index = SyncSize : size(RX_frame, 1)
+    sync_results(index, :) = LTF' * RX_frame(index - SyncSize + 1: index, :);
 end
+
+% Normalized to one
+sync_results = sync_results ./ (LTF' * LTF);
+[~, LTF_index] = max(abs(sync_results)); 
+
+
+

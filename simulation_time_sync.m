@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Waveform for preambles
+% Time synchronization results
 %
 % Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -24,17 +24,26 @@ close all;
 %% Variables
 bw = 1;    % [1/2] = [20/40] MHz
 Ntx = 1;
+Nzeros = 100;
 
 IEEE80211ac_GlobalVariables(bw);
+global N_CP
 
 %% Preambles
 [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntx);
+stream = [zeros(Nzeros, 1); sum([STF; LTF; DLTF], 2); zeros(Nzeros, 1)];
+stream = stream + 0.01 * rand(size(stream, 1), 1);
+
+[sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, sum(LTF(2*N_CP +1: end, :), 2));
 
 %% Figures
+figure; hold on;
+plot(real(stream));
+plot(imag(stream));
+title("Raw signals");
+
 figure;
-for itx = 1: Ntx
-    subplot(Ntx, 1, itx); hold on;
-    plot(real([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
-    plot(imag([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
-    title(['Transmit chain ' num2str(itx)]);
-end
+plot(abs(sync_results));
+title("Normalized synchronization results");
+
+disp(['LTF index is ' num2str(LTF_index)]);

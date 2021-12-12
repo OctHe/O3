@@ -2,7 +2,7 @@
 %
 % IEEE 802.11g simulation on the AWGN channel.
 %
-% Copyright (C) 2021.11.18  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear; close all;
+clear all; close all;
 
 %% Simualtion variables
 Nbytes      = 4096;         % The number of bits (max: 4096 Bytes)
