@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Time synchronization results
+% Write a data packet to files
 %
-% Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,32 +18,30 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear all;
+clear;
 close all;
 
 %% Variables
-bw = 1;    % [1/2] = [20/40] MHz
-Ntx = 1;
-Nzeros = 100;
+Ntxs = 2;
+Nzeros = 1600;
+Nsym = 18;
 
-IEEE80211ac_GlobalVariables(bw);
-global N_CP
+IEEE80211ac_GlobalVariables;
 
 %% Preambles
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntx);
-stream = [zeros(Nzeros, 1); sum([STF; LTF; DLTF], 2); zeros(Nzeros, 1)];
-stream = stream + 0.01 * rand(size(stream, 1), 1);
+[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
 
-[sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, sum(LTF(2*N_CP +1: end, :), 2));
+for itx = 1: Ntxs
+    stream = [zeros(Nzeros, 1); STF(:, itx); LTF(:, itx); DLTF(:, itx); repmat(DLTF(:, itx), Nsym, 1)];
 
-%% Figures
-figure; hold on;
-plot(real(stream));
-plot(imag(stream));
-title("Raw signals");
+    bins = reshape([real(stream), imag(stream)].', [], 1);
+    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '.bin'], 'w');
+    fwrite(fid, bins, 'float');
+    fclose(fid);
 
-figure;
-plot(abs(sync_results));
-title("Normalized synchronization results");
-
-disp(['LTF index is ' num2str(LTF_index)]);
+    %% Figures
+    figure; hold on
+    plot(real(stream));
+    plot(imag(stream));
+    title(['Stream for chain ' num2str(itx)]);
+end

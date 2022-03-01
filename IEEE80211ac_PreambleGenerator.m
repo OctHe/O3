@@ -4,8 +4,9 @@
 % Ntx: The number of transmit chain
 % STF(VHT): ((N_CP + N_FFT)*2, 1);
 % LTF1(VHT): ((N_CP + N_FFT)*2, 1);
+% LTFn(VHT): DLTF + ELTF
 %
-% Copyright (C) 2021.12.12  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -21,51 +22,47 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [STF, LTF1, DLTF] = IEEE80211ac_PreambleGenerator(Ntx)
+function [STF, LTF1, LTFn] = IEEE80211ac_PreambleGenerator(Ntx)
 
-global N_FFT N_SYNC N_CP SYNC_INDEX CYCLIC_SHIFT P_HT_LTF
-global STS LTS
+global N_FFT N_SYNC N_CP NON_ZERO_INDEX L_CYCLIC_SHIFT HT_P_LTF
+global VHT_STS VHT_LTS
 
 if Ntx <= 0
-    error('Error: Ntx nust be 1/2/3/4 !');
+    error('Error: Ntx must be 1/2/3/4 !');
 elseif Ntx > 4
-    error('Error: Ntx nust be 1/2/3/4 !');
+    error('Error: Ntx must be 1/2/3/4 !');
 end
 
-    STF_f = zeros(N_FFT, 1);
-    LTF_f = zeros(N_FFT, 1);
-    
-    STF_f(SYNC_INDEX) = STS;
-    LTF_f(SYNC_INDEX) = LTS;
-    
-    STF_t = zeros(N_FFT, Ntx);
-    LTF_t = zeros(N_FFT, Ntx);
-    
-    if Ntx <= 2
-        N_DLTF = Ntx;
-    else
-        N_DLTF = 4;
-    end
-    DLTF = zeros(N_DLTF * (N_CP + N_FFT), Ntx);
-    
+VHT_STF_f = zeros(N_FFT, 1);
+VHT_LTF_f = zeros(N_FFT, 1);
+
+VHT_STF_f(NON_ZERO_INDEX) = VHT_STS;
+VHT_LTF_f(NON_ZERO_INDEX) = VHT_LTS;
+
+VHT_STF_t = zeros(N_FFT, Ntx);
+VHT_LTF_t = zeros(N_FFT, Ntx);
+
+N_LTFn = 4;     % DLTF + ELTF = 4
+LTFn = zeros(N_LTFn * (N_CP + N_FFT), Ntx);
+
 for itx = 1: Ntx
 
-    STF_t(:, itx) = 1/sqrt(N_SYNC) * N_FFT * ifft(fftshift(STF_f));
-    LTF_t(:, itx) = 1/sqrt(N_SYNC) * N_FFT * ifft(fftshift(LTF_f));
+    VHT_STF_t(:, itx) = 1/sqrt(N_SYNC) * N_FFT * ifft(fftshift(VHT_STF_f));
+    VHT_LTF_t(:, itx) = 1/sqrt(N_SYNC) * N_FFT * ifft(fftshift(VHT_LTF_f));
 
     % Cyclic shift delay (CSD) blocks
-    STF_t(:, itx) = circshift(STF_t(:, itx), CYCLIC_SHIFT{Ntx}(itx));
-    LTF_t(:, itx) = circshift(LTF_t(:, itx), CYCLIC_SHIFT{Ntx}(itx));
+    VHT_STF_t(:, itx) = circshift(VHT_STF_t(:, itx), L_CYCLIC_SHIFT{Ntx}(itx));
+    VHT_LTF_t(:, itx) = circshift(VHT_LTF_t(:, itx), L_CYCLIC_SHIFT{Ntx}(itx));
     
     % Data LTF
-    DLTF_t = zeros(N_CP + N_FFT, N_DLTF);
-    for iltf = 1: N_DLTF
-        DLTF_t(:, iltf) = P_HT_LTF(iltf, itx) * ...
-            [LTF_t(end - N_CP +1: end, itx); LTF_t(:, itx)];
+    DLTF_t = zeros(N_CP + N_FFT, N_LTFn);
+    for iltf = 1: N_LTFn
+        DLTF_t(:, iltf) = HT_P_LTF(iltf, itx) * ...
+            [VHT_LTF_t(end - N_CP +1: end, itx); VHT_LTF_t(:, itx)];
     end
-    DLTF(:, itx) = reshape(DLTF_t, [], 1);
+    LTFn(:, itx) = reshape(DLTF_t, [], 1);
 end
 
-STF = [STF_t(end - 2 * N_CP +1: end, :); STF_t; STF_t];
-LTF1 = [LTF_t(end - 2 * N_CP +1: end, :); LTF_t; LTF_t];
+STF = [VHT_STF_t(end - 2 * N_CP +1: end, :); VHT_STF_t; VHT_STF_t];
+LTF1 = [VHT_LTF_t(end - 2 * N_CP +1: end, :); VHT_LTF_t; VHT_LTF_t];
 

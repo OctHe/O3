@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Write preambles to file
+% Write a null data packet (NDP) packet to files
 %
-% Copyright (C) 2021.12.11  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,27 +18,29 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear;
+clear all;  % clear all for global variables
 close all;
 
 %% Variables
-bw = 1;    % 20 MHz
-Nzeros = 0;
+Ntxs = 4;
+Nzeros = 100;
 
-IEEE80211ac_GlobalVariables(bw);
+IEEE80211ac_GlobalVariables;
 
 %% Preambles
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(1);
+[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
 
-stream = [zeros(Nzeros, 1); STF; LTF; zeros(Nzeros, 1)];
+for itx = 1: Ntxs
+    stream = [zeros(Nzeros, 1); STF(:, itx); LTF(:, itx); DLTF(:, itx)];
 
-bins = reshape([real(stream), imag(stream)].', [], 1);
-fid = fopen('ieee80211ac_preamble.bin', 'w');
-fwrite(fid, bins, 'float');
-fclose(fid);
+    bins = reshape([real(stream), imag(stream)].', [], 1);
+    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '.bin'], 'w');
+    fwrite(fid, bins, 'float');
+    fclose(fid);
 
-%% Figures
-figure; hold on
-plot(real(stream));
-plot(imag(stream));
-title('Stream');
+    %% Figures
+    figure; hold on
+    plot(real(stream));
+    plot(imag(stream));
+    title(['Stream for chain ' num2str(itx)]);
+end
