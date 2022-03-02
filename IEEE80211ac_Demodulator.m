@@ -1,7 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Modulation process
-% Data: (N_FFT * Nsym) x Ntxs matrix in frequency domain
+% Demodulation process
+% Data: (N_FFT * Nsym) x Ntxs matrix in time domain
+% MCS_Index: scalar, refer to IEEE 802.11ac
 % Payload_t: column vector
 % 
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
@@ -20,25 +21,22 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Payload_t = IEEE80211ac_Modulator(ModDataTX)
+function ModDataRX = IEEE80211ac_Demodulator(Payload_t)
 
 global N_FFT N_DATA
-global PILOTS
-global PILOT_INDEX DATA_INDEX
+global DATA_INDEX
 
-Nsym = size(ModDataTX, 1) / N_DATA;
-Ntxs = size(ModDataTX, 2);
+Nsym = size(Payload_t, 1) / N_FFT;
+Nrxs = size(Payload_t, 2);
 
-%% OFDM modulator
-Payload_t = zeros(N_FFT * Nsym, Ntxs);
-for itx = 1: Ntxs
+%% OFDM demodulator
+ModDataRX = zeros(N_DATA * Nsym, Nrxs);
+for itx = 1: Nrxs
+    
+    Payload_t_i = reshape(Payload_t(:, itx), N_FFT, Nsym);
+    
+    Payload_f_i = fftshift(fft(Payload_t_i, N_FFT, 1), 1);
+    ModDataRX(:, itx) = reshape(Payload_f_i(DATA_INDEX, :), [], 1);
 
-    Payload_f_i = zeros(N_FFT, Nsym);
-
-    Payload_f_i(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(itx, :), 1, Nsym);
-    Payload_f_i(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
-
-    Payload_t_i = ifft(fftshift(Payload_f_i, 1), N_FFT, 1);
-    Payload_t(:, itx) = reshape(Payload_t_i, [], 1);
 end
 

@@ -21,25 +21,25 @@
 function IEEE80211ac_GlobalVariables
 
 %% Frame structure
-global N_FFT N_PILOT N_SYNC N_CP N_STF N_LTF N_DATA
+global N_FFT N_PILOT N_VHT N_CP N_STF N_LTF N_DATA
 N_FFT       = 64;           % FFT size
 N_PILOT     = 4;        	% Number of pilots
 N_DATA      = 52;           % Number of data subcarriers
-N_SYNC      = 56;           % Number of STS and LTS
+N_VHT      = 56;            % Number of VHT subcarriers
 N_CP        = 16;           % Cyclic prefix length
 N_STF       = 160;          % STF length; 16 * 10
 N_LTF       = 160;          % LTF length: 32 +2 * 64
 
 %% Subcarriers
-global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX NON_ZERO_INDEX
+global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX VHT_INDEX
 DC_INDEX = 33;
 PILOT_INDEX = DC_INDEX + [-21, -7, 7, 21];
 GUARD_INDEX = DC_INDEX + [-32:-29, 29:31];
 DATA_INDEX  = DC_INDEX + [-28:-22, -20:-8, -6:-1, 1:6, 8:20, 22:28];
-NON_ZERO_INDEX  = DC_INDEX + [-28:-1, 1:28];
+VHT_INDEX  = DC_INDEX + [-28:-1, 1:28];
 
 %% Preambles and pilot
-global VHT_STS VHT_LTS PILOTS L_CYCLIC_SHIFT VHT_CYCLIC_SHIFT HT_P_LTF
+global VHT_STS VHT_LTS PILOTS L_CS VHT_CS HT_P_LTF
 VHT_STS = sqrt(1/2)* ...
     [ 0 0 0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 ...	% subcarriers -28 : -1  
       0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0 0].';	% subcarriers 1 : 28
@@ -63,16 +63,16 @@ PILOTS{4} = [ 1,  1,  1, -1;    % 4 antennas; transmit chain 1
 
 % Cyclic shift in samples (right shift)
 % Legend part: Refer to Table 21-11 in IEEE 802.11ac standard
-L_CYCLIC_SHIFT{1} = 0;
-L_CYCLIC_SHIFT{2} = [0, 4];
-L_CYCLIC_SHIFT{3} = [0, 2, 4];
-L_CYCLIC_SHIFT{4} = [0, 1, 2, 3];
+L_CS{1} = 0;
+L_CS{2} = [0, 4];
+L_CS{3} = [0, 2, 4];
+L_CS{4} = [0, 1, 2, 3];
 
 % VHT part: Refer to Table 21-11 in IEEE 802.11ac standard
-VHT_CYCLIC_SHIFT{1} = 0;
-VHT_CYCLIC_SHIFT{2} = [0, 8];
-VHT_CYCLIC_SHIFT{3} = [0, 8, 4];
-VHT_CYCLIC_SHIFT{4} = [0, 8, 4, 12];
+VHT_CS{1} = 0;
+VHT_CS{2} = [0, 8];
+VHT_CS{3} = [0, 8, 4];
+VHT_CS{4} = [0, 8, 4, 12];
 
 % HT-LTF mapping matrix
 HT_P_LTF = [ 1, -1,  1,  1;
@@ -82,10 +82,12 @@ HT_P_LTF = [ 1, -1,  1,  1;
 
 % Spatial mapping: Direct mapping
 
-%% MCS map in IEEE 802.11g standard
-global MCS_MAT
-MCS_MAT = [2, 2, 4, 4, 16, 16, 64, 64;
-    2, 4, 2, 4, 2, 4, 3, 4];
+%% MCS table
+global MCS_TAB
+MCS_TAB.mod     = [ 2, 4, 4, 16, 16, 64, 64, 256];  % Modulation
+MCS_TAB.rate    = [2, 2, 4,  2,  4,  3,  4,   6 ];  % Code rate
+                                                    % 2: 1/2; 3: 2/3
+                                                    % 4: 3/4; 6: 5/6
 
 %% Coding in IEEE 802.11g standard
 global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT CONV_TRELLIS TAIL_LEN

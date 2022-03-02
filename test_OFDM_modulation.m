@@ -1,9 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Modulation process
-% Data: (N_FFT * Nsym) x Ntxs matrix in frequency domain
-% Payload_t: column vector
-% 
+% OFDM modulation and demodulation
+%
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
@@ -20,25 +18,26 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Payload_t = IEEE80211ac_Modulator(ModDataTX)
+clear all;  % clear all for global variables
+close all;
 
-global N_FFT N_DATA
-global PILOTS
-global PILOT_INDEX DATA_INDEX
+%% Variables
+Ndata = 52;
+Ntxs = 2;
+MCS_Index = 8;
+IEEE80211ac_GlobalVariables;
 
-Nsym = size(ModDataTX, 1) / N_DATA;
-Ntxs = size(ModDataTX, 2);
+global MCS_TAB
 
-%% OFDM modulator
-Payload_t = zeros(N_FFT * Nsym, Ntxs);
-for itx = 1: Ntxs
+%% Modulation and demodulation
+Mod = MCS_TAB.mod(MCS_Index);
 
-    Payload_f_i = zeros(N_FFT, Nsym);
+DataTX = randi(Mod, [Ndata, Ntxs]) -1;
 
-    Payload_f_i(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(itx, :), 1, Nsym);
-    Payload_f_i(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
+ModDataTX = qammod(DataTX, Mod);
+Payload_t = IEEE80211ac_Modulator(ModDataTX);
+Payload_f = IEEE80211ac_Demodulator(Payload_t);
+DataRX = qamdemod(Payload_f, Mod);
 
-    Payload_t_i = ifft(fftshift(Payload_f_i, 1), N_FFT, 1);
-    Payload_t(:, itx) = reshape(Payload_t_i, [], 1);
-end
-
+%% Error symbol
+ErrorSym = DataRX - DataTX;

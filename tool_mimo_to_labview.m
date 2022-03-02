@@ -34,11 +34,14 @@ IEEE80211ac_GlobalVariables;
 for itx = 1: Ntxs
     stream = [zeros(Nzeros, 1); STF(:, itx); LTF(:, itx); DLTF(:, itx); repmat(DLTF(:, itx), Nsym, 1)];
 
-    bins = reshape([real(stream), imag(stream)].', [], 1);
-    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '.bin'], 'w');
-    fwrite(fid, bins, 'float');
+    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '_real.bin'], 'w');
+    fwrite(fid, real(stream) / max(abs(stream)) * (2^15-1), 'float');
     fclose(fid);
 
+    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '_imag.bin'], 'w');
+    fwrite(fid, imag(stream) / max(abs(stream)) * (2^15-1), 'float');
+    fclose(fid);
+    
     %% Figures
     figure; hold on
     plot(real(stream));
