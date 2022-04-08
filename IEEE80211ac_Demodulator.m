@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Demodulation process
-% Data: (N_FFT * Nsym) x Ntxs matrix in time domain
-% MCS_Index: scalar, refer to IEEE 802.11ac
-% Payload_t: column vector
+% Payload_t: (N_FFT * Nsym) x Ntxs matrix in time domain
+% CSI: Estimated CSI
+% ModDataRX: Demodulated data (column vector)
 % 
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -21,22 +21,45 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function ModDataRX = IEEE80211ac_Demodulator(Payload_t)
+function ModDataRX = IEEE80211ac_Demodulator(Payload_t, CSI)
 
-global N_FFT N_DATA
-global DATA_INDEX
+global N_CP N_FFT N_DATA N_PILOT PILOT_INDEX
+global SC_INDEX DATA_INDEX
 
-Nsym = size(Payload_t, 1) / N_FFT;
-Nrxs = size(Payload_t, 2);
+Nsym = size(Payload_t, 1) / (N_CP + N_FFT);
+Ntxs = size(CSI, 2);
+Nrxs = size(CSI, 3);
+
+PayloadRX = zeros(N_FFT, Nrxs, Nsym);
+EqualizedData = zeros(N_FFT, Ntxs, Nsym);
 
 %% OFDM demodulator
-ModDataRX = zeros(N_DATA * Nsym, Nrxs);
-for itx = 1: Nrxs
-    
-    Payload_t_i = reshape(Payload_t(:, itx), N_FFT, Nsym);
-    
-    Payload_f_i = fftshift(fft(Payload_t_i, N_FFT, 1), 1);
-    ModDataRX(:, itx) = reshape(Payload_f_i(DATA_INDEX, :), [], 1);
-
+for irx = 1: Nrxs
+for isym = 1: Nsym
+    PayloadRX(:, irx, isym) = ...
+        Payload_t((isym -1) * (N_CP + N_FFT) + N_CP +1: isym * (N_CP + N_FFT), irx);
+    PayloadRX(:, irx, isym) = ...
+        fftshift(1 / sqrt(N_FFT) * fft(PayloadRX(:, irx, isym)));
+end
 end
 
+% Channel equalization
+for fft_index = SC_INDEX
+for isym  = 1: Nsym
+    EqualizedData(fft_index, :, isym) = reshape( ...
+        reshape(CSI(fft_index, :, :), Ntxs, Nrxs) \ ...
+        reshape(PayloadRX(fft_index, :, isym), Nrxs, 1), ...
+        1, 1, Ntxs);
+end
+end
+
+%% Pilot
+
+
+%% Reshape
+PilotRX = zeros(N_PILOT * Nsym, Ntxs);
+ModDataRX = zeros(N_DATA * Nsym, Ntxs);
+for itx = 1: Ntxs
+    PilotRX(:, itx) = reshape(EqualizedData(PILOT_INDEX, itx, :), N_PILOT * Nsym, 1);
+    ModDataRX(:, itx) = reshape(EqualizedData(DATA_INDEX, itx, :), N_DATA * Nsym, 1);
+end

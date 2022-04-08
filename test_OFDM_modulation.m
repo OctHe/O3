@@ -18,26 +18,30 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear all;  % clear all for global variables
+clear;
 close all;
 
 %% Variables
 Ndata = 52;
-Ntxs = 2;
-MCS_Index = 8;
-IEEE80211ac_GlobalVariables;
+Ntxs = 1;
 
-global MCS_TAB
+global MCS_TAB DATA_INDEX N_FFT N_DATA
 
 %% Modulation and demodulation
-Mod = MCS_TAB.mod(MCS_Index);
+for MCS_Index = 1: 8
+    Mod = MCS_TAB.mod(MCS_Index);
+    CSI = zeros(N_FFT, 1);
+    CSI(DATA_INDEX) = ones(N_DATA, 1);
 
-DataTX = randi(Mod, [Ndata, Ntxs]) -1;
+    DataTX = randi(Mod, [Ndata, Ntxs]) -1;
 
-ModDataTX = qammod(DataTX, Mod);
-Payload_t = IEEE80211ac_Modulator(ModDataTX);
-Payload_f = IEEE80211ac_Demodulator(Payload_t);
-DataRX = qamdemod(Payload_f, Mod);
+    ModDataTX = qammod(DataTX, Mod);
+    Payload_t = IEEE80211ac_Modulator(ModDataTX);
+    Payload_f = IEEE80211ac_Demodulator(Payload_t, CSI);
+    DataRX = qamdemod(Payload_f, Mod);
 
-%% Error symbol
-ErrorSym = DataRX - DataTX;
+    %% Error symbol
+    SE = sum(DataRX ~= DataTX);
+    
+    disp(['Symbol Errors:' num2str(SE) ' (MCS == ' num2str(MCS_Index) ')']);
+end

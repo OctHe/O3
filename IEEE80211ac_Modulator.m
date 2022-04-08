@@ -22,7 +22,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function Payload_t = IEEE80211ac_Modulator(ModDataTX)
 
-global N_FFT N_DATA
+global N_CP N_FFT N_DATA
 global PILOTS
 global PILOT_INDEX DATA_INDEX
 
@@ -30,15 +30,15 @@ Nsym = size(ModDataTX, 1) / N_DATA;
 Ntxs = size(ModDataTX, 2);
 
 %% OFDM modulator
-Payload_t = zeros(N_FFT * Nsym, Ntxs);
+Payload_t = zeros((N_CP + N_FFT) * Nsym, Ntxs);
 for itx = 1: Ntxs
 
     Payload_f_i = zeros(N_FFT, Nsym);
 
-    Payload_f_i(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(itx, :), 1, Nsym);
+    Payload_f_i(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(:, itx), 1, Nsym);
     Payload_f_i(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
 
-    Payload_t_i = ifft(fftshift(Payload_f_i, 1), N_FFT, 1);
-    Payload_t(:, itx) = reshape(Payload_t_i, [], 1);
+    Payload_t_i = sqrt(N_FFT) * ifft(fftshift(Payload_f_i, 1), N_FFT, 1);
+    Payload_t(:, itx) = reshape([Payload_t_i(end-N_CP+1: end, :); Payload_t_i], [], 1);
 end
 

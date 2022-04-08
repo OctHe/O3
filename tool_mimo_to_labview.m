@@ -26,8 +26,6 @@ Ntxs = 2;
 Nzeros = 1600;
 Nsym = 18;
 
-IEEE80211ac_GlobalVariables;
-
 %% Preambles
 [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
 

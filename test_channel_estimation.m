@@ -1,8 +1,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Write a null data packet (NDP) packet to files
+% OFDM-MIMO channel estimation
 %
-% Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -22,23 +22,16 @@ clear;
 close all;
 
 %% Variables
-Ntxs = 4;
-Nzeros = 100;
+Ntxs = 2;
 
-%% Preambles
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
+%% Normalzied channel
+H = exp(2j * pi * rand(Ntxs, Ntxs));
 
-for itx = 1: Ntxs
-    stream = [zeros(Nzeros, 1); STF(:, itx); LTF(:, itx); DLTF(:, itx)];
+[~,  LTFtx, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs); 
 
-    bins = reshape([real(stream), imag(stream)].', [], 1);
-    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '.bin'], 'w');
-    fwrite(fid, bins, 'float');
-    fclose(fid);
-
-    %% Figures
-    figure; hold on
-    plot(real(stream));
-    plot(imag(stream));
-    title(['Stream for chain ' num2str(itx)]);
+DLTFRX = zeros(size(DLTF));
+for idltf = 1: size(DLTF, 1)
+    DLTFRX(idltf, :) = (H * DLTF(idltf, :).').';
 end
+
+CSI = IEEE80211ac_ChannelEstimator(DLTFRX, Ntxs, Ntxs);

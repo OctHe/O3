@@ -18,7 +18,7 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear all;  % clear all for global variables
+clear;
 close all;
 
 %% Variables
@@ -26,7 +26,6 @@ Ntxs = 4;
 
 groundtruth = 320;  % ground truth is the end of the LTF
 
-IEEE80211ac_GlobalVariables;
 global N_CP
 
 for ntx = 1: Ntxs
@@ -45,17 +44,20 @@ for ntx = 1: Ntxs
     end
     
     %% Time synchronization
-    [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, sum(LTF(2*N_CP +1: end, :), 2));
-
+    if ntx == 1
+        [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1));
+    else
+        [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1), true);
+    end
     %% Figures: Cross correlation results
     figure;
     plot(abs(sync_results));
     title("Normalized synchronization results");
 
     if LTF_index == groundtruth
-        disp(['Correct! (Ntxs = ' num2str(ntx) ')']);
+        disp(['Correct! (Ntxs == Nrxs == ' num2str(ntx) ')']);
     else
-        disp(['Error! (Ntxs = ' num2str(ntx) ')']);
+        disp(['Error! (Ntxs == Nrxs == ' num2str(ntx) ')']);
         disp(['         Offset = ' num2str(groundtruth - LTF_index)]);
     end
 end

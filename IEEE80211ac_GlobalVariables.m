@@ -21,22 +21,24 @@
 function IEEE80211ac_GlobalVariables
 
 %% Frame structure
-global N_FFT N_PILOT N_VHT N_CP N_STF N_LTF N_DATA
+global N_FFT N_PILOT N_SC N_CP N_STF N_LTF N_DATA N_TAIL N_LTFN
 N_FFT       = 64;           % FFT size
 N_PILOT     = 4;        	% Number of pilots
 N_DATA      = 52;           % Number of data subcarriers
-N_VHT      = 56;            % Number of VHT subcarriers
+N_SC        = 56;           % Number of VHT subcarriers
 N_CP        = 16;           % Cyclic prefix length
 N_STF       = 160;          % STF length; 16 * 10
 N_LTF       = 160;          % LTF length: 32 +2 * 64
+N_LTFN      = 4;            % Number of LTF for MIMO channel estimation
+N_TAIL      = 6;            % Tail bits
 
 %% Subcarriers
-global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX VHT_INDEX
-DC_INDEX = 33;
+global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX SC_INDEX
+DC_INDEX    = 33;
 PILOT_INDEX = DC_INDEX + [-21, -7, 7, 21];
 GUARD_INDEX = DC_INDEX + [-32:-29, 29:31];
 DATA_INDEX  = DC_INDEX + [-28:-22, -20:-8, -6:-1, 1:6, 8:20, 22:28];
-VHT_INDEX  = DC_INDEX + [-28:-1, 1:28];
+SC_INDEX    = DC_INDEX + [-28:-1, 1:28];
 
 %% Preambles and pilot
 global VHT_STS VHT_LTS PILOTS L_CS VHT_CS HT_P_LTF
@@ -44,22 +46,22 @@ VHT_STS = sqrt(1/2)* ...
     [ 0 0 0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 ...	% subcarriers -28 : -1  
       0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0 0].';	% subcarriers 1 : 28
                     
-VHT_LTS = sqrt(1/2)* ...
+VHT_LTS = ...
     [ 1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1 ...  subcarriers -28 : -1
       1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1 -1 -1 ].';	% subcarriers 1 : 28
 
 
 % Refer to Table 19-19 in IEEE 802.11ac standard
-PILOTS{1} = [ 1,  1,  1, -1 ];  % 1 antenna;  transmit chain 1
-PILOTS{2} = [ 1,  1, -1, -1     % 2 antennas; transmit chain 1
-              1, -1, -1,  1 ];  % 2 antennas; transmit chain 2
-PILOTS{3} = [ 1,  1, -1, -1;    % 3 antennas; transmit chain 1
-              1, -1,  1, -1;    % 3 antennas; transmit chain 2
-             -1,  1,  1, -1 ];  % 3 antennas; transmit chain 3
-PILOTS{4} = [ 1,  1,  1, -1;    % 4 antennas; transmit chain 1
-              1,  1, -1,  1;    % 4 antennas; transmit chain 2
-              1, -1,  1,  1;    % 4 antennas; transmit chain 3
-             -1,  1,  1,  1 ];  % 4 antennas; transmit chain 4
+PILOTS{1} = [ 1,  1,  1, -1 ].';    % 1 antenna;  transmit chain 1
+PILOTS{2} = [ 1,  1, -1, -1         % 2 antennas; transmit chain 1
+              1, -1, -1,  1 ].';    % 2 antennas; transmit chain 2
+PILOTS{3} = [ 1,  1, -1, -1;        % 3 antennas; transmit chain 1
+              1, -1,  1, -1;        % 3 antennas; transmit chain 2
+             -1,  1,  1, -1 ].';    % 3 antennas; transmit chain 3
+PILOTS{4} = [ 1,  1,  1, -1;        % 4 antennas; transmit chain 1
+              1,  1, -1,  1;        % 4 antennas; transmit chain 2
+              1, -1,  1,  1;        % 4 antennas; transmit chain 3
+             -1,  1,  1,  1 ].';    % 4 antennas; transmit chain 4
 
 % Cyclic shift in samples (right shift)
 % Legend part: Refer to Table 21-11 in IEEE 802.11ac standard

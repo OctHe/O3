@@ -4,29 +4,36 @@
 This is a simulation for the physical layer of IEEE 802.11a/g/n/ac standard.
 It includes basic signal process blocks, such as channel coding, modulation/demodulation, channel estimation.
 
+## Configuration of sim80211
+
+Before running the scripts, the configuration is needed by running in the command window of MATLAB
+
+    IEEE80211ac_GlobalVariables;
+
 ## Scripts for sim80211
 
 sim80211 give lots of scripts to show different types of simulation results.
 
-### Simulations
+### BER curve of IEEE 802.11a/g
 
 The simulation script can plot the curve of transmission results, such as
 
     simulation_BERvsSNR
 
-### Transceivers
+### Rician channel
 
-trasceiver scripts give one-shot transmission of IEEE 802.11a/g standard with different channel modlels.
+The transmission example of IEEE 802.11n/ac with time-varying Rician channel.
+The script now supports 20~MHz bandwidth
 
-    transceiver_awgn
-    transceiver_rician
+    simulation_rician_model
 
-### Tools for GNURadio
+### MIMO transceiver
 
-sim80211 provides a tool to generate indicated signals of IEEE 802.11 standard.
-The files are compatible with the *file source* block for GNURadio 3.7.11.
+Transmission example of IEEE 802.11n/ac with MIMO channel model.
+It support concurrently transmit multiple space streams.
+The TX/RX pair can support from 1 to 4.
 
-As an example, you can run
-    
-    tool_preamble_to_gnuradio
+    simulation_multiplexing
+
+
 
