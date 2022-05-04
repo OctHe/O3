@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Time synchronization results
+% Time synchronization results (coarse and fine time sync)
 %
 % Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -22,42 +22,64 @@ clear;
 close all;
 
 %% Variables
-Ntxs = 4;
-
-groundtruth = 320;  % ground truth is the end of the LTF
-
 global N_CP
 
+Ntxs = 4;
+Nzeros = 100;
+
+groundtruth = Nzeros + 320;  % ground truth is the end of the LTF
+
+%% Time sync for MIMO
 for ntx = 1: Ntxs
     
-    %% Preambles
-    [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(ntx);
-    stream = sum([STF; LTF; DLTF], 2);
+    disp(['******************************']);
+    disp(['Ntxs == Nrxs == ' num2str(ntx)]);
     
-    %% Figures: TX preambles
+    % Preambles
+    [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(ntx);
+    stream = [zeros(Nzeros, 1); sum([STF; LTF], 2); zeros(Nzeros, 1)];
+    
+    % Figures: TX preambles
     figure;
     for itx = 1: ntx
         subplot(ntx, 1, itx); hold on;
-        plot(real([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
-        plot(imag([STF(:, itx); LTF(:, itx); DLTF(:, itx)]));
+        plot(real([STF(:, itx); LTF(:, itx)]));
+        plot(imag([STF(:, itx); LTF(:, itx)]));
         title(['Transmit chain ' num2str(itx)]);
     end
     
-    %% Time synchronization
+    % Coarse time synchronization
+    [auto_results, pkt_index] = IEEE80211ac_PacketDetection(stream, 0.95);
+    
+    if pkt_index < groundtruth
+        disp(['coarse time synchronization correct!']);
+    else
+        disp(['coarse time synchronization error!']);
+        disp(['         Packet index: ' num2str(pkt_index)]);
+        disp(['         Expected index: ' num2str(Nzeros +1)]);
+    end
+    
+    % Figures: Auto-correlation results
+    figure;
+    plot(abs(auto_results));
+    title("Packet detection results");
+    
+    % Fine time synchronization
     if ntx == 1
         [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1));
     else
         [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1), true);
     end
-    %% Figures: Cross correlation results
+    
+    % Figures: Cross correlation results
     figure;
     plot(abs(sync_results));
     title("Normalized synchronization results");
 
     if LTF_index == groundtruth
-        disp(['Correct! (Ntxs == Nrxs == ' num2str(ntx) ')']);
+        disp(['Fine time synchronization correct!']);
     else
-        disp(['Error! (Ntxs == Nrxs == ' num2str(ntx) ')']);
+        disp(['Fine time synchronization error!']);
         disp(['         Offset = ' num2str(groundtruth - LTF_index)]);
     end
 end

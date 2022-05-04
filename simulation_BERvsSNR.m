@@ -81,7 +81,6 @@ for MCS = (MCS_INDEX +1)
     %% Channel model: awgn channel
     OFDM_RX = awgn(OFDM_TX, SNR, 'measured');
 
-    %% Sync-Free Receiver
     LongPreambleRX_t = OFDM_RX(2 * (N_CP + N_SC) + 2 * N_CP + 1: 4 * (N_CP + N_SC));
     Payload_RX_t = OFDM_RX(2 * (LONG_PREAMBLE_LEN + 2 * N_CP) +1: end);
 
