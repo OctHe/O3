@@ -20,8 +20,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function IEEE80211ac_GlobalVariables
 
+clear all;
+
+%% Version
+global VERSION
+VERSION     = 'ac';
+
 %% Frame structure
-global N_FFT N_PILOT N_SC N_CP N_STF N_LTF N_DATA N_TAIL N_LTFN
+global N_FFT N_PILOT N_SC N_CP N_STF N_LTF N_DATA N_TAIL N_LTFN MIN_BITS
 N_FFT       = 64;           % FFT size
 N_PILOT     = 4;        	% Number of pilots
 N_DATA      = 52;           % Number of data subcarriers
@@ -31,6 +37,12 @@ N_STF       = 160;          % STF length; 16 * 10
 N_LTF       = 160;          % LTF length: 32 +2 * 64
 N_LTFN      = 4;            % Number of LTF for MIMO channel estimation
 N_TAIL      = 6;            % Tail bits
+
+MIN_BITS    = 9360;         % The minimal required bits in a frame.
+                            % This wants to avoid errors with inproper
+                            % vector size.
+                            % It is related to convolutional encoder, 
+                            % number of data carriers, MCS, etc.
 
 %% Subcarriers
 global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX SC_INDEX
@@ -64,7 +76,7 @@ PILOTS{4} = [ 1,  1,  1, -1;        % 4 antennas; transmit chain 1
              -1,  1,  1,  1 ].';    % 4 antennas; transmit chain 4
 
 % Cyclic shift in samples (right shift)
-% Legend part: Refer to Table 21-11 in IEEE 802.11ac standard
+% Legend part
 L_CS{1} = 0;
 L_CS{2} = [0, 4];
 L_CS{3} = [0, 2, 4];
@@ -85,15 +97,17 @@ HT_P_LTF = [ 1, -1,  1,  1;
 % Spatial mapping: Direct mapping
 
 %% MCS table
-global MCS_TAB
-MCS_TAB.mod     = [ 2, 4, 4, 16, 16, 64, 64, 256];  % Modulation
-MCS_TAB.rate    = [2, 2, 4,  2,  4,  3,  4,   6 ];  % Code rate
-                                                    % 2: 1/2; 3: 2/3
-                                                    % 4: 3/4; 6: 5/6
+global MCS_TAB MCS_MAX
+MCS_MAX         = 10;
+MCS_TAB.mod     = [2, 4, 4, 16, 16, 64, 64, 64, 256, 256];  % Modulation
+MCS_TAB.rate    = [2, 2, 4,  2,  4,  3,  4,  6,   4,   6];  % Code rate
+                                                            % 2 -> 1/2; 
+                                                            % 3 -> 2/3;
+                                                            % 4 -> 3/4; 
+                                                            % 6 -> 5/6
 
-%% Coding in IEEE 802.11g standard
-global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT CONV_TRELLIS TAIL_LEN
+%% Coding
+global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT CONV_TRELLIS
 SCREAMBLE_POLYNOMIAL    = [1 0 0 0 1 0 0 1];
 SCREAMBLE_INIT          = [0 1 0 0 1 0 1];
 CONV_TRELLIS            = poly2trellis(7, [133 171]);
-TAIL_LEN                = 6;

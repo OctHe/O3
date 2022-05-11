@@ -1,8 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Write a null data packet (NDP) packet to files
+% Channel Estimation with zero forcing
+% DLTFrx: column vector
+% CSI: column vector
 %
-% Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,27 +20,18 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear;
-close all;
+function CSI = IEEE80211g_ChannelEstimator(LTF_rx)
 
-%% Variables
-Ntxs = 4;
-Nzeros = 100;
+global N_CP N_FFT GUARD_INDEX
 
-%% Preambles
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
+[~,  LTF_tx] = IEEE80211g_PreambleGenerator; 
+LTF_tx = LTF_tx(2 * N_CP + N_FFT + 1: end);
 
-for itx = 1: Ntxs
-    stream = [zeros(Nzeros, 1); STF(:, itx); LTF(:, itx); DLTF(:, itx)];
+LTF_rx = reshape(LTF_rx, N_FFT, 2);
 
-    bins = reshape([real(stream), imag(stream)].', [], 1);
-    fid = fopen(['ieee80211ac_ndp_chain_' num2str(itx) '.bin'], 'w');
-    fwrite(fid, bins, 'float');
-    fclose(fid);
+LTS_TX_f = fftshift(fft(LTF_rx, N_FFT, 1), 1);
+LTS_RX_f = fftshift(fft(LTF_tx, N_FFT, 1), 1);
 
-    %% Figures
-    figure; hold on
-    plot(real(stream));
-    plot(imag(stream));
-    title(['Stream for chain ' num2str(itx)]);
-end
+CSI = LTS_TX_f .* (LTS_RX_f(:, 1) + LTS_RX_f(:, 2))/2;
+
+CSI(GUARD_INDEX) = zeros(size(GUARD_INDEX));

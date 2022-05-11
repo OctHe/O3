@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% IEEE 802.11n/ac simulation on the Rician channel.
+% IEEE 802.11n/ac simulation on the AWGN channel.
 %
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -23,7 +23,9 @@ close all;
 
 %% Variables
 global MCS_TAB
-global N_CP N_LTF N_FFT N_LTFN N_DATA
+global N_CP N_LTF N_FFT N_LTFN N_TAIL
+global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT
+global MIN_BITS
 
 MHz         = 1e6;          % 1MHz
 Hz          = 1;
@@ -31,43 +33,59 @@ Hz          = 1;
 Nbits       = 8192;
 MCSi        = 8;
 
-Mod = MCS_TAB.mod(MCSi);
-Nbps = log2(Mod) * N_DATA;
-
-SNR = 40;
+SNR = 30;
 BW = 20 * MHz;
 
 %% Transmitter
-BitsTX = randi(2, [Nbits, 1]) -1;
+TxBits = randi(2, [Nbits, 1]) -1;
 
-Npad = Nbps - mod(Nbits, Nbps);
-BitsPadTX = [BitsTX; zeros(Npad, 1)];
+Npad = MIN_BITS - mod(size(TxBits, 1) + N_TAIL, MIN_BITS);
+TxPadBits = [TxBits; zeros(Npad + N_TAIL, 1)];
+
+IEEE80211_scrambler = comm.Scrambler( ...
+                        'CalculationBase', 2, ...
+                        'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                        'InitialConditions', SCREAMBLE_INIT ...
+                        );
+TxScrambledBits = IEEE80211_scrambler(TxPadBits);
+
+EncodedBits = IEEE80211ac_ConvolutionalEncoder(TxScrambledBits, MCS_TAB.rate(MCSi));
+
+TxModData = qammod(EncodedBits, MCS_TAB.mod(MCSi), 'InputType', 'bit', 'UnitAveragePower',true);
+TxPayload_t = IEEE80211ac_Modulator(TxModData);
 
 [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(1);
-ModDataTX = qammod(BitsPadTX, Mod, 'InputType', 'bit', 'UnitAveragePower',true);
-Payload_t = IEEE80211ac_Modulator(ModDataTX);
 
-FrameTX = [STF; LTF; DLTF; Payload_t];
+TxFrame = [STF; LTF; DLTF; TxPayload_t];
 
 %% Channel model: awgn channel
-FrameRX = awgn(FrameTX, SNR, 'measured');
+TxFrame = awgn(TxFrame, SNR, 'measured');
 
 %% Receiver
-[sync_results, LTF_index] = IEEE80211ac_SymbolSync(FrameRX, LTF(2*N_CP +1: end, 1));
+[sync_results, LTF_index] = OFDM_SymbolSync(TxFrame, LTF(2*N_CP +1: end, 1));
 
 if LTF_index == N_LTF * 2   % If sync is correct
     
-    LTF_RX = FrameRX(LTF_index - N_LTF +1: LTF_index);
-    DLTF_RX = FrameRX(LTF_index +1: LTF_index + (N_CP + N_FFT) * N_LTFN);
-    Payload_RX_t = FrameRX(LTF_index + (N_CP + N_FFT) * N_LTFN +1: end);
+    RxLTF = TxFrame(LTF_index - N_LTF +1: LTF_index);
+    RxDLTF = TxFrame(LTF_index +1: LTF_index + (N_CP + N_FFT) * N_LTFN);
+    RxPayload_t = TxFrame(LTF_index + (N_CP + N_FFT) * N_LTFN +1: end);
 
-    CSI = IEEE80211ac_ChannelEstimator(DLTF_RX, 1, 1);
+    CSI = IEEE80211ac_ChannelEstimator(RxDLTF, 1, 1);
 
-    Payload_RX_f = IEEE80211ac_Demodulator(Payload_RX_t, CSI);
+    RxPayload_f = IEEE80211ac_Demodulator(RxPayload_t, CSI);
 
-    BitsRX = qamdemod(Payload_RX_f, Mod, 'OutputType', 'bit', 'UnitAveragePower',true);
-    BitsRX = BitsRX(1: end - Npad);
-
+    DecodedBits = qamdemod(RxPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
+    
+    DescrambledBits = IEEE80211ac_ConvolutionalDecoder(DecodedBits, MCS_TAB.rate(MCSi));
+    
+	IEEE80211_descrambler = comm.Descrambler( ...
+                        'CalculationBase', 2, ...
+                        'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                        'InitialConditions', SCREAMBLE_INIT ...
+                        );
+    RxPadBits = IEEE80211_descrambler(DescrambledBits);
+    
+    RxBits = RxPadBits(1: end - N_TAIL - Npad);
 end
 
 %% Transmission result
@@ -77,12 +95,12 @@ title('Correlation result');
 
 if LTF_index == N_LTF * 2
     
-    error_bits = xor(BitsRX, BitsTX);
+    error_bits = xor(RxBits, TxBits);
     BER = sum(error_bits) / Nbits;
 
     figure; hold on; 
-    plot(abs(LTF_RX(N_CP *2 +1: N_CP *2 + N_FFT)));
-    plot(abs(LTF_RX(N_CP *2 + N_FFT +1: end)));
+    plot(abs(RxLTF(N_CP *2 +1: N_CP *2 + N_FFT)));
+    plot(abs(RxLTF(N_CP *2 + N_FFT +1: end)));
     title('Long preamble in the time domain');
 
     figure;
@@ -94,14 +112,14 @@ if LTF_index == N_LTF * 2
     title('CSI estimation angle');
 
     figure; hold on;
-    scatter(real(Payload_RX_f), imag(Payload_RX_f));
+    scatter(real(RxPayload_f), imag(RxPayload_f));
     title('Constellation of RX payload');
 
     clc;
     disp(['*********AWGN Channel Model********']);
     disp(['    SNR: ' num2str(SNR) ' dB']);
     disp(['*********Transmission Result*********']);
-    disp(['    Packet length: ' num2str(length(FrameRX) / BW) ' us']);
+    disp(['    Packet length: ' num2str(length(TxFrame) / BW) ' us']);
     disp(['    Time synchronization successful!']);
     if BER == 0
         disp(['    Frame reception successful!']);

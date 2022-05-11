@@ -24,7 +24,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [STF, LTF1, LTFn] = IEEE80211ac_PreambleGenerator(Ntx)
 
-global N_FFT N_SC N_CP N_LTFN SC_INDEX L_CS HT_P_LTF
+global N_FFT N_SC N_CP N_LTFN SC_INDEX VHT_CS HT_P_LTF
 global VHT_STS VHT_LTS
 
 if Ntx <= 0
@@ -50,8 +50,8 @@ for itx = 1: Ntx
     VHT_LTF_t(:, itx) = 1/sqrt(N_SC) * N_FFT * ifft(fftshift(VHT_LTF_f));
 
     % Cyclic shift delay (CSD) blocks
-    VHT_STF_t(:, itx) = circshift(VHT_STF_t(:, itx), L_CS{Ntx}(itx));
-    VHT_LTF_t(:, itx) = circshift(VHT_LTF_t(:, itx), L_CS{Ntx}(itx));
+    VHT_STF_t(:, itx) = circshift(VHT_STF_t(:, itx), VHT_CS{Ntx}(itx));
+    VHT_LTF_t(:, itx) = circshift(VHT_LTF_t(:, itx), VHT_CS{Ntx}(itx));
     
     % Data and extend LTF
     DLTF_t = zeros(N_CP + N_FFT, N_LTFN);

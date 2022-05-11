@@ -22,7 +22,7 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [M, pkt_index] = IEEE80211ac_PacketDetection(rx_frame, threshold)
+function [M, pkt_index] = OFDM_PacketDetection(rx_frame, threshold)
 
 global N_CP
 
@@ -35,25 +35,33 @@ index_vec = 1: Nsamp;
 % Algorithm: M = C / P
 
 M = zeros(size(rx_frame));
-rx = rx_frame(1: end - N_CP);
-delayed_rx = rx_frame(N_CP +1: end);
+Nrxs = size(rx_frame, 2);
 
-C = zeros(Nsamp, 1);
-P = zeros(Nsamp, 1);
-for isamp = 1 : Nsamp - 2 * N_CP
-    C(isamp) = rx(isamp: isamp + N_CP -1)' * delayed_rx(isamp: isamp + N_CP -1);
-    P(isamp) = ...
-        (rx(isamp: isamp + N_CP -1)' * rx(isamp: isamp + N_CP -1) + ...
-        delayed_rx(isamp: isamp + N_CP -1)' * delayed_rx(isamp: isamp + N_CP -1)) / 2;
+for irx = 1: Nrxs
+    
+    rx = rx_frame(1: end - N_CP, irx);
+    delayed_rx = rx_frame(N_CP +1: end, irx);
+
+    C = zeros(Nsamp, 1);
+    P = zeros(Nsamp, 1);
+    for isamp = 1 : Nsamp - 2 * N_CP
+        C(isamp) = rx(isamp: isamp + N_CP -1)' * delayed_rx(isamp: isamp + N_CP -1);
+        P(isamp) = ...
+            (rx(isamp: isamp + N_CP -1)' * rx(isamp: isamp + N_CP -1) + ...
+            delayed_rx(isamp: isamp + N_CP -1)' * delayed_rx(isamp: isamp + N_CP -1)) / 2;
+    end
+
+    M(:, irx) = abs(C).^2 ./ P.^2;
 end
 
-M = abs(C).^2 ./ P.^2;
-
-M = sum(M, 2);
-
 %% Packet detection
+pkt_index = zeros(1, Nrxs);
 detect_index = M > threshold;
-if sum(detect_index) >= 1.5 * N_CP
-    pkt_index_vec = index_vec(detect_index);
-    pkt_index = pkt_index_vec(1);
+for irx = 1: Nrxs
+    if sum(detect_index(:, irx)) >= 1.5 * N_CP
+        pkt_index_vec = index_vec(detect_index(:, irx));
+        pkt_index(irx) = pkt_index_vec(1);
+    else
+        pkt_index(irx) = -1;
+    end
 end

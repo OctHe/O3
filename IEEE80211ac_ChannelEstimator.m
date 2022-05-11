@@ -26,12 +26,12 @@ function CSI = IEEE80211ac_ChannelEstimator(DLTFrx, Ntxs, Nrxs)
 
 global N_CP N_FFT N_SC SC_INDEX
 
-CSI = zeros(N_FFT, Ntxs, Nrxs);
+CSI = zeros(N_FFT, Nrxs, Ntxs);
 
 %% RX preambles
-LongPreambleRX = zeros(N_FFT, Nrxs, Nrxs);
+LongPreambleRX = zeros(N_FFT, Nrxs, Ntxs);
 for rx = 1: Nrxs
-for iltf = 1: Nrxs
+for iltf = 1: Ntxs
     LongPreambleRX(:, rx, iltf) = ...
         DLTFrx((iltf -1) * (N_CP + N_FFT) + N_CP +1: iltf * (N_CP + N_FFT), rx);
     LongPreambleRX(:, rx, iltf) = ...
@@ -55,7 +55,7 @@ end
 %% Channel estimation
 for fft_index = SC_INDEX
     CSI(fft_index, :, :) = reshape( ...
-        reshape(LongPreambleRX(fft_index, :, :), Nrxs, Nrxs) / ...
+        reshape(LongPreambleRX(fft_index, :, :), Nrxs, Ntxs) / ...
         reshape(LongPreambleTX(fft_index, :, :), Ntxs, Ntxs), ...
         1, Ntxs, Nrxs);
 end

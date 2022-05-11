@@ -22,13 +22,13 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [cros_results, LTF_index] = IEEE80211ac_SymbolSync(RX_frame, sync_word, refine)
+function [cros_results, LTF_index] = OFDM_SymbolSync(RX_frame, sync_word, refine)
 
 global N_FFT
 
 Nrxs = size(RX_frame, 2);
 
-if nargin == 2
+if nargin == 2 || Nrxs == 1
     refine = false;
 end
 

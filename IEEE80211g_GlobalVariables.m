@@ -20,45 +20,61 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function IEEE80211g_GlobalVariables
 
-%% Frame structure
-global N_SC N_CP STF_LEN LONG_PREAMBLE_LEN TONES_NUM SC_DATA_NUM 
-global SC_PILOT_NUM  
-N_SC                    = 64;           % Number of subcarriers
-N_CP                    = 16;           % Cyclic prefix length
-STF_LEN                 = 160;          % STF length; 16 * 10
-LONG_PREAMBLE_LEN       = 128; 
-TONES_NUM               = 52;
-SC_DATA_NUM             = 48;
-SC_PILOT_NUM            = 4;
+clear all;
 
+%% Version
+global VERSION
+VERSION     = 'g';
+
+%% Frame structure
+global N_FFT N_PILOT N_SC N_CP N_STF N_LTF N_DATA N_TAIL MIN_BITS
+N_FFT       = 64;           % FFT size
+N_PILOT     = 4;        	% Number of pilots
+N_DATA      = 48;           % Number of data subcarriers
+N_SC        = 52;           % Number of VHT subcarriers
+N_CP        = 16;           % Cyclic prefix length
+N_STF       = 160;          % STF length; 16 * 10
+N_LTF       = 160;          % LTF length: 32 +2 * 64
+N_TAIL      = 6;            % Tail bits
+
+MIN_BITS    = 144;          % The minimal required bits in a frame.
+                            % This wants to avoid errors with inproper
+                            % vector size.
+                            % It is related to convolutional encoder, 
+                            % number of data carriers, MCS, etc.
+                            
 %% Subcarriers
-global SC_IND_PILOTS SC_IND_DATA TONES_INDEX GUARD_SC_INDEX
-SC_IND_PILOTS           = [8 22 44 58];                             % Pilot subcarrier indices
-SC_IND_DATA             = [2:7 9:21 23:27 39:43 45:57 59:64];       % Data subcarrier indices, 0: N_SC -1
-TONES_INDEX             = [2 :27 39: 64];                           % non-zero subcarriers index, 0:31, -32: -1
-GUARD_SC_INDEX          = [1 28: 38];
+global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX SC_INDEX
+DC_INDEX    = 33;
+PILOT_INDEX = DC_INDEX + [-21, -7, 7, 21];
+GUARD_INDEX = DC_INDEX + [-32:-27, 27:31];
+DATA_INDEX  = DC_INDEX + [-26:-22, -20:-8, -6:-1, 1:6, 8:20, 22:26];
+SC_INDEX    = DC_INDEX + [-26:-1, 1:26];
 
 %% STF, LTF, and pilot
-global ShortTrainingSymbol LongTrainingSymbol PILOTS
-ShortTrainingSymbol = sqrt(13/6)* ...
-            [ 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 ...    % subcarriers 0 : 31
-              0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0].';    % subcarriers -32 : -1
-          
-LongTrainingSymbol = [ 1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1 ...     % subcarriers 0 : 31
-                       1  1 -1 -1  1  1 -1  1 -1  1  1  1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1].';     % subcarriers -32 : -1
-                   
-PILOTS = [1 1 -1 1].';
+global L_STS L_LTS PILOTS
+L_STS = sqrt(1/2)* ...
+    [ 0 0 0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 ...	% subcarriers -28 : -1  
+      0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0 0].';	% subcarriers 1 : 28
+                    
+L_LTS = ...
+    [ 1  1 -1 -1  1  1 -1  1 -1  1  1  1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1 ...  subcarriers -26 : -1
+      1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1].';	% subcarriers 1 : 26
+
+PILOTS{1} = [1 1 -1 1].';
 
 %% MCS map
-global MCS_MAT BITRATE_MAT CODE_RATE
-MCS_MAT = [2, 2, 4, 4, 16, 16, 64, 64;
-    2, 4, 2, 4, 2, 4, 3, 4];
-CODE_RATE = [1/2, 3/4, 1/2, 3/4, 1/2, 3/4, 2/3, 3/4];        % Code rate
-BITRATE_MAT = [6; 9; 12; 18; 24; 36; 48; 54];   % Unit: Mbps
+global MCS_TAB MCS_MAX
+MCS_MAX         = 8;
+MCS_TAB.mod     = [2, 2, 4, 4, 16, 16, 64, 64];  % Modulation
+MCS_TAB.rate    = [2, 4, 2, 4,  2,  4, 3 ,  4];  % Code rate
+                                                            % 2 -> 1/2; 
+                                                            % 3 -> 2/3;
+                                                            % 4 -> 3/4; 
+
 
 %% Coding
-global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT CONV_TRELLIS TAIL_LEN
+global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT CONV_TRELLIS
 SCREAMBLE_POLYNOMIAL    = [1 0 0 0 1 0 0 1];
 SCREAMBLE_INIT          = [0 1 0 0 1 0 1];
 CONV_TRELLIS            = poly2trellis(7, [133 171]);
-TAIL_LEN                = 6;

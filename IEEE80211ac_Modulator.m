@@ -33,12 +33,18 @@ Ntxs = size(ModDataTX, 2);
 Payload_t = zeros((N_CP + N_FFT) * Nsym, Ntxs);
 for itx = 1: Ntxs
 
-    Payload_f_i = zeros(N_FFT, Nsym);
+    Payload_f_itx = zeros(N_FFT, Nsym);
 
-    Payload_f_i(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(:, itx), 1, Nsym);
-    Payload_f_i(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
+    % Pilot insertion
+    Payload_f_itx(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(:, itx), 1, Nsym);
+    
+    % Data insertion
+    Payload_f_itx(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
 
-    Payload_t_i = sqrt(N_FFT) * ifft(fftshift(Payload_f_i, 1), N_FFT, 1);
-    Payload_t(:, itx) = reshape([Payload_t_i(end-N_CP+1: end, :); Payload_t_i], [], 1);
+    % IFFT
+    Payload_t_itx = sqrt(N_FFT) * ifft(fftshift(Payload_f_itx, 1), N_FFT, 1);
+    
+    % CP addition
+    Payload_t(:, itx) = reshape([Payload_t_itx(end-N_CP+1: end, :); Payload_t_itx], [], 1);
 end
 

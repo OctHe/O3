@@ -49,7 +49,7 @@ for ntx = 1: Ntxs
     end
     
     % Coarse time synchronization
-    [auto_results, pkt_index] = IEEE80211ac_PacketDetection(stream, 0.95);
+    [auto_results, pkt_index] = OFDM_PacketDetection(stream, 0.95);
     
     if pkt_index < groundtruth
         disp(['coarse time synchronization correct!']);
@@ -66,9 +66,9 @@ for ntx = 1: Ntxs
     
     % Fine time synchronization
     if ntx == 1
-        [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1));
+        [sync_results, LTF_index] = OFDM_SymbolSync(stream, LTF(2*N_CP +1: end, 1));
     else
-        [sync_results, LTF_index] = IEEE80211ac_SymbolSync(stream, LTF(2*N_CP +1: end, 1), true);
+        [sync_results, LTF_index] = OFDM_SymbolSync(stream, LTF(2*N_CP +1: end, 1), true);
     end
     
     % Figures: Cross correlation results
@@ -80,7 +80,7 @@ for ntx = 1: Ntxs
         disp(['Fine time synchronization correct!']);
     else
         disp(['Fine time synchronization error!']);
-        disp(['         Offset = ' num2str(groundtruth - LTF_index)]);
+        disp(['         Delay: ' num2str(LTF_index - groundtruth) ' Sample(s)']);
     end
 end
 

@@ -1,10 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Preamble Generation for IEEE 802.11. Now it supports IEEE 802.11a
-% STF_t(Legend): (N_CP + N_CP + N_SC + N_SC, 1);
-% LTF_t(Legend): (N_CP + N_CP + N_SC + N_SC, 1);
+% Ntx: The number of transmit chain
+% STF(VHT): ((N_CP + N_FFT)*2, 1);
+% LTF1(VHT): ((N_CP + N_FFT)*2, 1);
+% LTFn(VHT): DLTF + ELTF
 %
-% Copyright (C) 2021.11.03  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2021-2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -20,18 +22,20 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function [STF_t, LTF_t] = IEEE80211g_PreambleGenerator
+function [STF, LTF] = IEEE80211g_PreambleGenerator
 
-global N_SC ShortTrainingSymbol LongTrainingSymbol TONES_INDEX
+global N_FFT N_SC N_CP SC_INDEX
+global L_STS L_LTS
 
-ShortPreamble_f = zeros(N_SC, 1);
-LongPreamble_f = zeros(N_SC, 1);
+STF_f = zeros(N_FFT, 1);
+LTF_f = zeros(N_FFT, 1);
 
-ShortPreamble_f(TONES_INDEX) = ShortTrainingSymbol;
-LongPreamble_f(TONES_INDEX) = LongTrainingSymbol;
+STF_f(SC_INDEX) = L_STS;
+LTF_f(SC_INDEX) = L_LTS;
 
-ShortPreamble_t = ifft(ShortPreamble_f);
-LongPreamble_t = ifft(LongPreamble_f);
+STF_t = 1/sqrt(N_SC) * N_FFT * ifft(fftshift(STF_f));
+LTF_t = 1/sqrt(N_SC) * N_FFT * ifft(fftshift(LTF_f));
 
-STF_t = [ShortPreamble_t(N_SC/2+1: N_SC); ShortPreamble_t; ShortPreamble_t];
-LTF_t = [LongPreamble_t(N_SC/2+1: N_SC); LongPreamble_t; LongPreamble_t];
+STF = [STF_t(end - 2 * N_CP +1: end, :); STF_t; STF_t];
+LTF = [LTF_t(end - 2 * N_CP +1: end, :); LTF_t; LTF_t];
+

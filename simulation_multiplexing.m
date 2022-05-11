@@ -76,7 +76,7 @@ end
 if NO_CHANNEL
     LTF_index = N_LTF * 2;
 else
-    [sync_results, LTF_index] = IEEE80211ac_SymbolSync(FrameRX, LTF(2*N_CP +1: end, 1), true);
+    [sync_results, LTF_index] = OFDM_SymbolSync(FrameRX, LTF(2*N_CP +1: end, 1), true);
 end
 
 if LTF_index == N_LTF * 2   % If sync is correct
@@ -134,7 +134,7 @@ if LTF_index == N_LTF * 2   % If sync is correct
     for itx = 1: Ntxs
     for irx = 1: Nrxs
         subplot(Ntxs , Nrxs, (itx -1) * Nrxs + irx);
-        plot(angle(CSI(:, itx, irx)));
+        plot(angle(CSI(:, irx, itx)));
         title(['Phase (TX: ' num2str(itx) '; RX: ' num2str(irx) ')']);
     end
     end

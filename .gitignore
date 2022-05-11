@@ -6,9 +6,11 @@
 
 gr-beamnet/build
 gr-beamnet/tags
+top_block.py
 
 # Data files
 *.bin
+*.mat
 
 # Compiled Object files
 *.slo
