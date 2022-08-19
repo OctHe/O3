@@ -1,8 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% input: vector, scalar; output: vector
-% 
-% Copyright (C) 2017  Shiyue He (hsy1995313@gmail.com)
+% Received power estimation from CSI for OFDM system
+% CSI: N_FFT x Nrxs x Ntxs
+% SNR: Ntxs x 1
+%
+% Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
 % it under the terms of the GNU General Public License as published by
@@ -18,16 +20,18 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function BinData = Dec2BinVector(DecData, BinLen)
+function RxPower = OFDM_RxPowerEstimation(CSI)
 
-[~, n] = size(DecData);
-if n ~= 1
-    error('The first paramter must be a column vector!')
-end
+global PILOT_INDEX N_PILOT
 
-BinData = zeros(BinLen, size(DecData, 1));
-for k = 1: BinLen
-    BinData(BinLen + 1 - k, :) = mod(DecData, 2);
-    DecData = floor(DecData / 2);
+Nrxs = size(CSI, 2);
+Ntxs = size(CSI, 3);
+
+RxPower = zeros(Ntxs, 1);
+
+for itx = 1: Ntxs
+    for irx = 1: Nrxs
+        RxPower = RxPower + CSI(PILOT_INDEX, irx, itx)' * CSI(PILOT_INDEX, irx, itx);
+    end
+    RxPower(itx) = 10 * log10(RxPower / N_PILOT);
 end
-BinData = reshape(BinData, [], 1);

@@ -4,7 +4,7 @@
 % DLTFrx: column vector
 % Ntxs: TX antennas
 % Nrxs: RX antennas
-% CSI: column vector
+% CSI: (FFT x Ntxs x Nrxs)
 %
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
@@ -22,40 +22,42 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function CSI = IEEE80211ac_ChannelEstimator(DLTFrx, Ntxs, Nrxs)
+function CSI = OFDM_ChannelEstimator(RxDLTF, Ntxs, Nrxs)
 
-global N_CP N_FFT N_SC SC_INDEX
+global N_CP N_FFT N_TONE TONE_INDEX
 
 CSI = zeros(N_FFT, Nrxs, Ntxs);
 
+Nsym = Ntxs;
+
 %% RX preambles
-LongPreambleRX = zeros(N_FFT, Nrxs, Ntxs);
+RxLongPreamble = zeros(N_FFT, Nrxs, Nsym);
 for rx = 1: Nrxs
 for iltf = 1: Ntxs
-    LongPreambleRX(:, rx, iltf) = ...
-        DLTFrx((iltf -1) * (N_CP + N_FFT) + N_CP +1: iltf * (N_CP + N_FFT), rx);
-    LongPreambleRX(:, rx, iltf) = ...
-        fftshift(sqrt(N_SC) / N_FFT * fft(LongPreambleRX(:, rx, iltf), N_FFT, 1), 1);
+    RxLongPreamble(:, rx, iltf) = ...
+        RxDLTF((iltf -1) * (N_CP + N_FFT) + N_CP +1: iltf * (N_CP + N_FFT), rx);
+    RxLongPreamble(:, rx, iltf) = ...
+        fftshift(sqrt(N_TONE) / N_FFT * fft(RxLongPreamble(:, rx, iltf), N_FFT, 1), 1);
 end
 end
 
 %% TX preambles
-LongPreambleTX = zeros(N_FFT, Ntxs, Ntxs);
-[~,  ~, DLTFtx] = IEEE80211ac_PreambleGenerator(Ntxs); 
-DLTFtx = DLTFtx(1: (N_CP + N_FFT) * Ntxs, :);  % Not all DLTFs are needed
+TxLongPreamble = zeros(N_FFT, Ntxs, Nsym);
+[~,  ~, TxDLTF] = OFDM_PreambleGenerator(Ntxs); 
+TxDLTF = TxDLTF(1: (N_CP + N_FFT) * Nsym, :);  % Not all DLTFs are needed
 for tx = 1: Ntxs
-for iltf = 1: Ntxs
-    LongPreambleTX(:, tx, iltf) = ...
-        DLTFtx((iltf -1) * (N_CP + N_FFT) + N_CP +1: iltf * (N_CP + N_FFT), tx);
-    LongPreambleTX(:, tx, iltf) = ...
-        fftshift(sqrt(N_SC) / N_FFT * fft(LongPreambleTX(:, tx, iltf), N_FFT, 1), 1);
+for iltf = 1: Nsym
+    TxLongPreamble(:, tx, iltf) = ...
+        TxDLTF((iltf -1) * (N_CP + N_FFT) + N_CP +1: iltf * (N_CP + N_FFT), tx);
+    TxLongPreamble(:, tx, iltf) = ...
+        fftshift(sqrt(N_TONE) / N_FFT * fft(TxLongPreamble(:, tx, iltf), N_FFT, 1), 1);
 end
 end
 
 %% Channel estimation
-for fft_index = SC_INDEX
+for fft_index = TONE_INDEX
     CSI(fft_index, :, :) = reshape( ...
-        reshape(LongPreambleRX(fft_index, :, :), Nrxs, Ntxs) / ...
-        reshape(LongPreambleTX(fft_index, :, :), Ntxs, Ntxs), ...
-        1, Ntxs, Nrxs);
+        reshape(RxLongPreamble(fft_index, :, :), Nrxs, Nsym) / ...
+        reshape(TxLongPreamble(fft_index, :, :), Ntxs, Nsym), ...
+        1, Nrxs, Ntxs);
 end

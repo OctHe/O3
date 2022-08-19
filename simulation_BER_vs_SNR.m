@@ -30,13 +30,26 @@ global MIN_BITS
 MHz         = 1e6;          % 1MHz
 Hz          = 1;
 
-Nbits       = 65536;
+Nbits       = 1024;
 
-SNR_TAB = 1: 40;
+SNR_TAB = 1: 3: 30;
 BW = 20 * MHz;
 
 BER = zeros(length(SNR_TAB), MCS_MAX);
 
+%% Modules
+OFDM_Scrambler = comm.Scrambler( ...
+                    'CalculationBase', 2, ...
+                    'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                    'InitialConditions', SCREAMBLE_INIT ...
+                    );
+OFDM_Descrambler = comm.Descrambler( ...
+                    'CalculationBase', 2, ...
+                    'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                    'InitialConditions', SCREAMBLE_INIT ...
+                    );
+
+%% Transmisstion
 for SNR = SNR_TAB
 for MCSi = 1: MCS_MAX
     % Transmitter
@@ -45,19 +58,14 @@ for MCSi = 1: MCS_MAX
     Npad = MIN_BITS - mod(size(BitsTX, 1) + N_TAIL, MIN_BITS);
     PadedBitsTX = [BitsTX; zeros(Npad + N_TAIL, 1)];
 
-    IEEE80211_scrambler = comm.Scrambler( ...
-                            'CalculationBase', 2, ...
-                            'Polynomial', SCREAMBLE_POLYNOMIAL, ...
-                            'InitialConditions', SCREAMBLE_INIT ...
-                            );
-    ScrambledBits = IEEE80211_scrambler(PadedBitsTX);
+    ScrambledBits = OFDM_Scrambler(PadedBitsTX);
 
     EncodedBits = IEEE80211ac_ConvolutionalEncoder(ScrambledBits, MCS_TAB.rate(MCSi));
 
     ModDataTX = qammod(EncodedBits, MCS_TAB.mod(MCSi), 'InputType', 'bit', 'UnitAveragePower',true);
-    Payload_t = IEEE80211ac_Modulator(ModDataTX);
+    Payload_t = OFDM_Modulator(ModDataTX);
 
-    [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(1);
+    [STF, LTF, DLTF] = OFDM_PreambleGenerator(1);
 
     FrameTX = [STF; LTF; DLTF; Payload_t];
 
@@ -73,20 +81,15 @@ for MCSi = 1: MCS_MAX
         DLTF_RX = FrameRX(LTF_index +1: LTF_index + (N_CP + N_FFT) * N_LTFN);
         Payload_RX_t = FrameRX(LTF_index + (N_CP + N_FFT) * N_LTFN +1: end);
 
-        CSI = IEEE80211ac_ChannelEstimator(DLTF_RX, 1, 1);
+        CSI = OFDM_ChannelEstimator(DLTF_RX, 1, 1);
 
-        Payload_RX_f = IEEE80211ac_Demodulator(Payload_RX_t, CSI);
+        Payload_RX_f = OFDM_Demodulator(Payload_RX_t, CSI);
 
         DecodedBits = qamdemod(Payload_RX_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
 
         DescrambledBits = IEEE80211ac_ConvolutionalDecoder(DecodedBits, MCS_TAB.rate(MCSi));
 
-        IEEE80211_descrambler = comm.Descrambler( ...
-                            'CalculationBase', 2, ...
-                            'Polynomial', SCREAMBLE_POLYNOMIAL, ...
-                            'InitialConditions', SCREAMBLE_INIT ...
-                            );
-        TailBitsRX = IEEE80211_descrambler(DescrambledBits);
+        TailBitsRX = OFDM_Descrambler(DescrambledBits);
 
         BitsRX = TailBitsRX(1: end - N_TAIL - Npad);
 

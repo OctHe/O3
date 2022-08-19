@@ -21,7 +21,6 @@
 clear; close all;
 
 %% Variables
-
 global MCS_TAB
 global N_CP N_LTF N_FFT N_LTFN N_DATA
 
@@ -29,8 +28,8 @@ MHz         = 1e6;          % 1MHz
 Hz          = 1;
 
 Nbits       = 8192;
-MCSi        = 7;
-Ntxs        = 4;
+MCSi        = 4;
+Ntxs        = 1;
 Nrxs        = Ntxs;
 
 Mod = MCS_TAB.mod(MCSi);
@@ -40,9 +39,9 @@ NO_CHANNEL = false;
 
 %% Channel model
 BW          = 20;                   % Bandwidth (20 MHz)
-doppler     = 50 * Hz;              % Doppler shift is around 5 Hz
-path_delays = [0, 0.05, 0.1] / MHz;
-avg_gains   = [0, -20, -40];        % Average path gain in dB
+doppler     = 90 * Hz;              % Doppler shift is around 5 Hz
+path_delays = [0] / MHz;
+avg_gains   = [0];        % Average path gain in dB
 
 mimochannel = comm.MIMOChannel(...
         'SampleRate', BW * MHz,...
@@ -55,42 +54,42 @@ mimochannel = comm.MIMOChannel(...
         'NumReceiveAntennas',Nrxs);
 
 %% Transmitter
-BitsTX = randi(2, [Nbits, Ntxs]) -1;
+TxBits = randi(2, [Nbits, Ntxs]) -1;
 
 Npad = Nbps - mod(Nbits, Nbps);
-BitsPadTX = [BitsTX; zeros(Npad, Ntxs)];
+TxPadBits = [TxBits; zeros(Npad, Ntxs)];
 
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs);
-ModDataTX = qammod(BitsPadTX, Mod, 'InputType', 'bit', 'UnitAveragePower',true);
-Payload_t = IEEE80211ac_Modulator(ModDataTX);
+[STF, LTF, DLTF] = OFDM_PreambleGenerator(Ntxs);
+TxModData = qammod(TxPadBits, Mod, 'InputType', 'bit', 'UnitAveragePower',true);
+Payload_t = OFDM_Modulator(TxModData);
 
-FrameTX = [STF; LTF; DLTF; Payload_t];
+TxFrame = [STF; LTF; DLTF; Payload_t];
 
 %% Channel model
 if NO_CHANNEL
-    FrameRX = FrameTX;
+    RxFrame = TxFrame;
 else
-    FrameRX = mimochannel(FrameTX);
+    RxFrame = mimochannel(TxFrame);
 end
+
 %% Receiver
 if NO_CHANNEL
     LTF_index = N_LTF * 2;
 else
-    [sync_results, LTF_index] = OFDM_SymbolSync(FrameRX, LTF(2*N_CP +1: end, 1), true);
+    [sync_results, LTF_index] = OFDM_SymbolSync(RxFrame, LTF(2*N_CP +1: end, Nrxs), true);
 end
 
 if LTF_index == N_LTF * 2   % If sync is correct
 
-    LTF_RX = FrameRX(LTF_index - N_LTF +1: LTF_index, :);
-    DLTF_RX = FrameRX(LTF_index +1: LTF_index + (N_CP + N_FFT) * N_LTFN, :);
-    Payload_RX_t = FrameRX(LTF_index + (N_CP + N_FFT) * N_LTFN +1: end, :);
+    RxDLTF = RxFrame(LTF_index +1: LTF_index + (N_CP + N_FFT) * N_LTFN, :);
+    RxPayload_t = RxFrame(LTF_index + (N_CP + N_FFT) * N_LTFN +1: end, :);
 
-    CSI = IEEE80211ac_ChannelEstimator(DLTF_RX, Ntxs, Nrxs);
+    CSI = OFDM_ChannelEstimator(RxDLTF, Ntxs, Nrxs);
 
-    ModDataRX = IEEE80211ac_Demodulator(Payload_RX_t, CSI);
+    RxModData = OFDM_Demodulator(RxPayload_t, CSI);
 
-    BitsRX = qamdemod(ModDataRX, Mod, 'OutputType', 'bit', 'UnitAveragePower',true);
-    BitsRX = BitsRX(1: end - Npad, :);
+    RxPadBits = qamdemod(RxModData, Mod, 'OutputType', 'bit', 'UnitAveragePower',true);
+    RxBits = RxPadBits(1: end - Npad, :);
     
 end
 
@@ -98,7 +97,7 @@ end
 if LTF_index == N_LTF * 2   % If sync is correct
     
     % BER
-    error_bits = xor(BitsRX, BitsTX);
+    error_bits = xor(RxBits, TxBits);
     BER = sum(sum(error_bits)) / Nbits;
     
     clc;
@@ -107,7 +106,7 @@ if LTF_index == N_LTF * 2   % If sync is correct
     disp(['    Path Gains: [' num2str(avg_gains) '] dB']);
     disp(['    Maximum Doppler shift: ' num2str(doppler) ' Hz']);
     disp(['*********Transmission Result*********']);
-    disp(['    Packet length: ' num2str(size(FrameRX, 1) / BW) ' us']);
+    disp(['    Packet length: ' num2str(size(RxFrame, 1) / BW) ' us']);
     if BER == 0
         disp(['    Frame reception successful!']);
     else
@@ -116,10 +115,6 @@ if LTF_index == N_LTF * 2   % If sync is correct
     end
     disp(['*************************************']);
 
-    figure;
-    stem(error_bits);
-    title('Error bits');
-    
     % Channel
     figure;
     for itx = 1: Ntxs
@@ -139,11 +134,17 @@ if LTF_index == N_LTF * 2   % If sync is correct
     end
     end
     
-    figure;
+    
     for itx = 1: Ntxs
-        scatter(real(ModDataRX(:, itx)), imag(ModDataRX(:, itx)));
+        figure;
+        scatter(real(RxModData(:, itx)), imag(RxModData(:, itx)));
+        xlim([-2, 2]); ylim([-2, 2]);
         title(['RX payload constellation (TX antenna ' num2str(itx) ')']);
     end
+    
+    figure;
+    stem(error_bits);
+    title('Error bits');
     
 else
     clc;

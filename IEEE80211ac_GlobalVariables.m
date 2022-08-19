@@ -27,11 +27,11 @@ global VERSION
 VERSION     = 'ac';
 
 %% Frame structure
-global N_FFT N_PILOT N_SC N_CP N_STF N_LTF N_DATA N_TAIL N_LTFN MIN_BITS
+global N_FFT N_PILOT N_TONE N_CP N_STF N_LTF N_DATA N_TAIL N_LTFN MIN_BITS
 N_FFT       = 64;           % FFT size
 N_PILOT     = 4;        	% Number of pilots
 N_DATA      = 52;           % Number of data subcarriers
-N_SC        = 56;           % Number of VHT subcarriers
+N_TONE      = 56;           % Number of tone subcarriers
 N_CP        = 16;           % Cyclic prefix length
 N_STF       = 160;          % STF length; 16 * 10
 N_LTF       = 160;          % LTF length: 32 +2 * 64
@@ -45,12 +45,12 @@ MIN_BITS    = 9360;         % The minimal required bits in a frame.
                             % number of data carriers, MCS, etc.
 
 %% Subcarriers
-global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX SC_INDEX
+global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX TONE_INDEX
 DC_INDEX    = 33;
 PILOT_INDEX = DC_INDEX + [-21, -7, 7, 21];
 GUARD_INDEX = DC_INDEX + [-32:-29, 29:31];
 DATA_INDEX  = DC_INDEX + [-28:-22, -20:-8, -6:-1, 1:6, 8:20, 22:28];
-SC_INDEX    = DC_INDEX + [-28:-1, 1:28];
+TONE_INDEX  = DC_INDEX + [-28:-1, 1:28];
 
 %% Preambles and pilot
 global VHT_STS VHT_LTS PILOTS L_CS VHT_CS HT_P_LTF

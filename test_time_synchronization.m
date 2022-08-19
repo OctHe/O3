@@ -36,7 +36,7 @@ for ntx = 1: Ntxs
     disp(['Ntxs == Nrxs == ' num2str(ntx)]);
     
     % Preambles
-    [STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(ntx);
+    [STF, LTF, DLTF] = OFDM_PreambleGenerator(ntx);
     stream = [zeros(Nzeros, 1); sum([STF; LTF], 2); zeros(Nzeros, 1)];
     
     % Figures: TX preambles

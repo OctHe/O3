@@ -27,11 +27,11 @@ Ntxs = 2;
 %% Normalzied channel
 H = exp(2j * pi * rand(Ntxs, Ntxs));
 
-[~,  LTFtx, DLTF] = IEEE80211ac_PreambleGenerator(Ntxs); 
+[~,  LTFtx, DLTF] = OFDM_PreambleGenerator(Ntxs); 
 
 DLTFRX = zeros(size(DLTF));
 for idltf = 1: size(DLTF, 1)
     DLTFRX(idltf, :) = (H * DLTF(idltf, :).').';
 end
 
-CSI = IEEE80211ac_ChannelEstimator(DLTFRX, Ntxs, Ntxs);
+CSI = OFDM_ChannelEstimator(DLTFRX, Ntxs, Ntxs);

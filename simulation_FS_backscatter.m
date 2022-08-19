@@ -24,21 +24,17 @@ close all;
 %% Variables
 global MCS_TAB 
 global N_CP N_LTF N_FFT N_DATA N_LTFN N_TAIL 
-global MIN_BITS
+global SCREAMBLE_POLYNOMIAL SCREAMBLE_INIT
 
 MHz         = 1e6;          % 1MHz
 Hz          = 1;
 
-Nbits       = 8192;
-MCSi        = 3;
-
-BackMod     = 2;            % 2, 4 -> BPSK, QPSK
+Nbits       = 5000;
+MCSi        = 2;
 
 Nbps = log2(MCS_TAB.mod(MCSi)) * N_DATA;    % Bits in each symbol
 
-NO_CHANNEL = true;
-
-%% Channel model
+%% Modules
 BW          = 20 * MHz;                 % Bandwidth (20 MHz)
 doppler     = 100 * Hz;                 % Doppler shift is around 5 Hz
 path_delays = [0, 0.05, 0.1] / MHz;
@@ -52,16 +48,28 @@ H = comm.RicianChannel(...
         'DirectPathDopplerShift', doppler,...
         'PathGainsOutputPort', true);
 
-
+OFDM_Scrambler = comm.Scrambler( ...
+                    'CalculationBase', 2, ...
+                    'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                    'InitialConditions', SCREAMBLE_INIT ...
+                    );
+OFDM_Descrambler = comm.Descrambler( ...
+                    'CalculationBase', 2, ...
+                    'Polynomial', SCREAMBLE_POLYNOMIAL, ...
+                    'InitialConditions', SCREAMBLE_INIT ...
+                    );
+                    
 %% Transmitter
 TxBits = randi(2, [Nbits, 1]) -1;
 
-Npad = MIN_BITS - mod(size(TxBits, 1) + N_TAIL, MIN_BITS);
+Npad = Nbps - mod(Nbits + N_TAIL, Nbps);
 TxPadBits = [TxBits; zeros(Npad + N_TAIL, 1)];
 
-[STF, LTF, DLTF] = IEEE80211ac_PreambleGenerator(1);
-TxModData = qammod(TxPadBits, MCS_TAB.mod(MCSi), 'InputType', 'bit', 'UnitAveragePower',true);
-Payload_t = IEEE80211ac_Modulator(TxModData);
+ScrambledBits = OFDM_Scrambler(TxPadBits);
+
+[STF, LTF, DLTF] = OFDM_PreambleGenerator(1);
+TxModData = qammod(ScrambledBits, MCS_TAB.mod(MCSi), 'InputType', 'bit', 'UnitAveragePower',true);
+Payload_t = OFDM_Modulator(TxModData);
 
 TxFrame = [STF; LTF; DLTF; Payload_t];
 
@@ -73,13 +81,12 @@ if Ntp < 0
     error('The frame at a tag must be less than the frame of the ambient source');
 end
 
-TagBits = randi(2, [Nts * log2(BackMod), 1]) -1;
+TagBits = randi(2, [Nts, 1]) -1;    % Backscatter only uses BPSK modulation
 
-TagModData = qammod([TagBits; zeros(Ntp, 1)], BackMod, 'InputType', 'bit', 'UnitAveragePower',true);
+TagModData = qammod([TagBits; zeros(Ntp, 1)], 2, 'InputType', 'bit', 'UnitAveragePower',true);
 
 % Reflection STF and LTF (4 symbols)
 % Channel estimation training sequence (4 symbols);
-% Training sequence always uses BPSK modulation
 TagTrainBits = [zeros(4, 1); zeros(2, 1); 1; 1];
 BTF = qammod(TagTrainBits, 2, 'InputType', 'bit', 'UnitAveragePower',true);
 
@@ -89,6 +96,7 @@ TagFrame = kron([BTF; TagModData], ones(N_CP + N_FFT, 1));
 %% Direct channel and double-fading channel
 RxFrame = H(TxFrame);
 
+% Tag shifts the frequency into another channel
 IncomingFrame = H(TxFrame);
 RxHybridFrame = H(IncomingFrame .* TagFrame);
 
@@ -100,12 +108,15 @@ if AmbientIndex == N_LTF * 2   % If sync is correct
     RxDLTF = RxFrame(AmbientIndex +1: AmbientIndex + (N_CP + N_FFT) * N_LTFN);
     RxPayload_t = RxFrame(AmbientIndex + (N_CP + N_FFT) * N_LTFN +1: end);
 
-    CSId = IEEE80211ac_ChannelEstimator(RxDLTF, 1, 1);
+    CSId = OFDM_ChannelEstimator(RxDLTF, 1, 1);
 
-    RxPayload_f = IEEE80211ac_Demodulator(RxPayload_t, CSId);
+    RxPayload_f = OFDM_Demodulator(RxPayload_t, CSId);
 
-    RxBits = qamdemod(RxPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
-    RxBits = RxBits(1: end - N_TAIL - Npad);
+    DecodedBits = qamdemod(RxPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
+    
+    RxTailBits = OFDM_Descrambler(DecodedBits);
+    
+    RxBits = RxTailBits(1: end - N_TAIL - Npad);
 
 end
 
@@ -117,23 +128,32 @@ if TagIndex == N_LTF * 2   % If sync is correct
     HybridDLTF = RxHybridFrame(TagIndex +1: TagIndex + (N_CP + N_FFT) * N_LTFN);
     HybridPayload_t = RxHybridFrame(TagIndex + (N_CP + N_FFT) * N_LTFN +1: end);
 
-    CSIr = IEEE80211ac_ChannelEstimator(HybridDLTF, 1, 1);
+    CSIr = OFDM_ChannelEstimator(HybridDLTF, 1, 1);
 
-    HybridPayload_f = IEEE80211ac_Demodulator(HybridPayload_t, CSIr);
+    HybridPayload_f = OFDM_Demodulator(HybridPayload_t, CSIr);
 
-    RxHybridBits = qamdemod(HybridPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
-    RxHybridBits = RxHybridBits(1: end - N_TAIL - Npad);
+    HybridDedecodedBits = qamdemod(HybridPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
+    
+    HybridTailBits = OFDM_Descrambler(HybridDedecodedBits);
+    
+    HybridBits = HybridTailBits(1: end - N_TAIL - Npad);
 
 end
 
 %% Codebook-based backscatter decoding
-% The algorithm is firstly illustrated in HitchHike (SenSys'16) and 
-% Freerider (CoNEXT'17)
+% Reference: Zhang, Pengyu, Colleen Josephson, Dinesh Bharadia, and Sachin 
+% Katti. "Freerider: Backscatter communication using commodity radios." In 
+% Proceedings of ACM CoNEXT, pp. 389-401. 2017.
 
-TagDecodedBits = zeros(Nts, 1);
+if AmbientIndex == N_LTF * 2 && TagIndex == N_LTF * 2
+    TagDecodedBits = zeros(Nts, 1);
 
-for its = 1: Nts
-    TagDecodedBits(its) = sum(xor(RxHybridBits((its -1) * Nbps +1: its * Nbps), RxBits((its -1) * Nbps +1: its * Nbps))) ~= 0;
+    % If pilot is available, the frequency-shift backscatter cannot be
+    % decoded
+    for its = 1: Nts
+        DecodedCodeword = xor(HybridBits((its -1) * Nbps +1: its * Nbps), RxBits((its -1) * Nbps +1: its * Nbps));
+        TagDecodedBits(its) = sum(DecodedCodeword) >= Nbps/2;
+    end
 end
 
 %% Transmission result
@@ -159,7 +179,7 @@ if TagIndex == N_LTF * 2
     tag_error_bits = xor(TagDecodedBits, TagBits);
 
     figure;
-    scatter(1: size(tag_error_bits), tag_error_bits);
+    scatter(1: Nts, tag_error_bits);
     ylim([0, 2]);
     title('Error bits');
     

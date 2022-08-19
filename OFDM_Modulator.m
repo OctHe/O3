@@ -1,9 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Channel Estimation with zero forcing
-% DLTFrx: column vector
-% CSI: column vector
-%
+% Modulation process
+% Data: (N_FFT * Nsym) x Ntxs matrix in frequency domain
+% Payload_t: column vector
+% 
 % Copyright (C) 2022  Shiyue He (hsy1995313@gmail.com)
 % 
 % This program is free software: you can redistribute it and/or modify
@@ -20,18 +20,30 @@
 % along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function CSI = IEEE80211g_ChannelEstimator(LTF_rx)
+function Payload_t = OFDM_Modulator(ModDataTX)
 
-global N_CP N_FFT GUARD_INDEX
+global N_CP N_FFT N_DATA
+global PILOTS
+global PILOT_INDEX DATA_INDEX
 
-[~,  LTF_tx] = IEEE80211g_PreambleGenerator; 
-LTF_tx = LTF_tx(2 * N_CP + N_FFT + 1: end);
+Nsym = size(ModDataTX, 1) / N_DATA;
+Ntxs = size(ModDataTX, 2);
 
-LTF_rx = reshape(LTF_rx, N_FFT, 2);
+%% OFDM modulator
+Payload_t = zeros((N_CP + N_FFT) * Nsym, Ntxs);
+Payload_f_itx = zeros(N_FFT, Nsym);
+for itx = 1: Ntxs
 
-LTS_TX_f = fftshift(fft(LTF_rx, N_FFT, 1), 1);
-LTS_RX_f = fftshift(fft(LTF_tx, N_FFT, 1), 1);
+    % Pilot insertion
+    Payload_f_itx(PILOT_INDEX, :) = repmat(PILOTS{Ntxs}(:, itx), 1, Nsym);
+    
+    % Data insertion
+    Payload_f_itx(DATA_INDEX, :) = reshape(ModDataTX(:, itx), N_DATA, Nsym);
 
-CSI = LTS_TX_f .* (LTS_RX_f(:, 1) + LTS_RX_f(:, 2))/2;
+    % IFFT
+    Payload_t_itx = sqrt(N_FFT) * ifft(fftshift(Payload_f_itx, 1), N_FFT, 1);
+    
+    % CP addition
+    Payload_t(:, itx) = reshape([Payload_t_itx(end-N_CP+1: end, :); Payload_t_itx], [], 1);
+end
 
-CSI(GUARD_INDEX) = zeros(size(GUARD_INDEX));

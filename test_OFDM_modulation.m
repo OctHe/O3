@@ -33,15 +33,15 @@ for MCS_Index = 1: 8
     CSI = zeros(N_FFT, 1);
     CSI(DATA_INDEX) = ones(N_DATA, 1);
 
-    DataTX = randi(Mod, [Ndata, Ntxs]) -1;
+    TxData = randi(Mod, [Ndata, Ntxs]) -1;
 
-    ModDataTX = qammod(DataTX, Mod);
-    Payload_t = IEEE80211ac_Modulator(ModDataTX);
-    Payload_f = IEEE80211ac_Demodulator(Payload_t, CSI);
-    DataRX = qamdemod(Payload_f, Mod);
+    TxModData = qammod(TxData, Mod);
+    Payload_t = OFDM_Modulator(TxModData);
+    Payload_f = OFDM_Demodulator(Payload_t, CSI);
+    RxData = qamdemod(Payload_f, Mod);
 
     %% Error symbol
-    SE = sum(DataRX ~= DataTX);
+    SE = sum(RxData ~= TxData);
     
     disp(['Symbol Errors:' num2str(SE) ' (MCS == ' num2str(MCS_Index) ')']);
 end
