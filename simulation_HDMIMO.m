@@ -33,9 +33,9 @@ MCSi    = 2;
 
 Nbps    = log2(MCS_TAB.mod(MCSi)) * N_DATA;    % Bits in each symbol
 
-Ntxs    = 1;
-Ntags   = 1;
-Nrxs    = 2;
+Ntxs    = 2;
+Ntags   = 2;
+Nrxs    = 4;
     
 %% HD-MIMO Transmitter
 TxBits = randi(2, [Nbits, Ntxs]) -1;
@@ -90,14 +90,16 @@ if SyncIndex == N_LTF * 2   % If sync is correct
 
     [RxAmbientPayload_f, RxTagPayload_f] = HDMIMO_Demodulator(RxPayload_t, D_CSI, R_CSI);
 
+    RxTagCombinedPayload_f = reshape(mean(RxTagPayload_f(DATA_INDEX, :, :), 1), [], Ntags);
+
     RxAmbientsTailBits = qamdemod(RxAmbientPayload_f, MCS_TAB.mod(MCSi), 'OutputType', 'bit', 'UnitAveragePower',true);
-    
+
     RxAmbientBits = RxAmbientsTailBits(1: end - N_TAIL - Npad, :);
 
-    RxTagTailBits = qamdemod(RxTagPayload_f, 2, 'OutputType', 'bit', 'UnitAveragePower',true);
+    RxTagTailBits = qamdemod(RxTagCombinedPayload_f, 2, 'OutputType', 'bit', 'UnitAveragePower',true);
+
+    RxTagBits = RxTagTailBits(1: end - Ntp, :);
     
-    RxTagClassifedBits = (sum(RxTagTailBits(DATA_INDEX, :), 1) > N_DATA / 2).';
-    RxTagBits = RxTagClassifedBits(1: end - Ntp, :);
     
 end
 
@@ -119,12 +121,19 @@ if SyncIndex == N_LTF * 2   % If sync is correct
     end
     disp(['*************************************']);
     
-    figure;
+    figure; hold on;
     for itx = 1: Ntxs
         scatter(real(RxAmbientPayload_f(:, itx)), imag(RxAmbientPayload_f(:, itx)));
     end
     xlim([-2, 2]); ylim([-2, 2]);
     title(['RX payload constellation']);
+    
+    figure; hold on;
+    for itx = 1: Ntags
+        scatter(real(RxTagCombinedPayload_f(:, itx)), imag(RxTagCombinedPayload_f(:, itx)));
+    end
+    xlim([-2, 2]); ylim([-2, 2]);
+    title(['Tag payload constellation']);
     
     figure;
     stem(AmbientErrorBits);

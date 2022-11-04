@@ -43,7 +43,7 @@ for irx = 1: Nrxs
     delayed_rx = rx_frame(N_CP +1: end, irx);
 
     C = zeros(Nsamp, 1);
-    P = zeros(Nsamp, 1);
+    P = ones(Nsamp, 1);
     for isamp = 1 : Nsamp - 2 * N_CP
         C(isamp) = rx(isamp: isamp + N_CP -1)' * delayed_rx(isamp: isamp + N_CP -1);
         P(isamp) = ...
