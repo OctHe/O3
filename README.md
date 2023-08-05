@@ -10,7 +10,7 @@ The simulation platform contains only baseband processes and algorithms of the p
 
 In addition, the frame structure and transmission parameters are referenced to the IEEE 802.11 standard, which is the well-known wireless protocol, but are not guaranteed to be compatible with the standard.
 The project uses MATLAB 2017 and later, but the MATLAB version has not been development.
-No new features will be added.
+Since I don't have MATLAB license anymore, no new features and bug fixes will be added in the near future.
 
 ## Configuration
 
@@ -18,12 +18,16 @@ Before running the scripts, the configuration is required by running in the comm
 
     IEEE80211ac_GlobalVariables;
 
+## OFDM Baseband Scripts
+
 Then, you can run 
 
     simulation_OFDM_BER.m
 
 The results will show the BER vs SNR curve.
 Other simulation scripts also can be run.
+
+## OFDM Backscatter Scripts
 
 The projcts also contains simulation about OFDM backscatter, please run
 
