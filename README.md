@@ -1,7 +1,7 @@
-# OFDM Baseband Simulation Platform
+# Triple-O
 
-OFDM Baseband Simulation Platform (OBSP) is a simulation platform that relates to an OFDM-based system.
-The simulation platform contains only baseband processes and algorithms of the proposed OFDM system, including follows
+Triple-O means *O*pen-source *O*FDM simulation based on *O*ctave.
+The simulation platform contains baseband processes and algorithms of the OFDM system, including follows
 
 - Modulation and demodulation
 - Encoding and decoding
@@ -11,7 +11,7 @@ The simulation platform contains only baseband processes and algorithms of the p
 
 In addition, the frame structure and transmission parameters are referenced to the IEEE 802.11 standard, which is the well-known wireless protocol, but are not guaranteed to be compatible with the standard.
 
-# Configuration
+## Configuration
 
 Before running the scripts, the configuration is required by running in the command line of Octave:
 
