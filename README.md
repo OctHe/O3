@@ -1,6 +1,6 @@
-# Triple-O
+# O3
 
-Triple-O means *O*pen-source *O*FDM simulation based on *O*ctave.
+O3 means **O**pen-source **O**FDM simulation platform based on **O**ctave.
 The simulation platform contains baseband processes and algorithms of the OFDM system, including follows
 
 - Modulation and demodulation
