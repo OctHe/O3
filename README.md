@@ -9,11 +9,18 @@ The simulation platform contains baseband processes and algorithms of the OFDM s
 - Channel estimation
 - OFDM Backscatter
 
-In addition, the frame structure and transmission parameters are referenced to the IEEE 802.11 standard, which is the well-known wireless protocol, but are not guaranteed to be compatible with the standard.
+In addition, the frame structure and transmission parameters are refered from the IEEE 802.11 standard, which is the well-known wireless standard, but are not guaranteed to be compatible with it.
+
+Note that the architecture of this project is under refactoring, so the functions may not work well.
 
 ## Configuration
 
-Before running the scripts, the configuration is required by running in the command line of Octave:
+If this is the first time to use Octave, please install the follows Octave forge packages in the command line of Octave:
+
+    pkg install -forge control signal communications
+
+It will download forge packages without super user privilege.
+Before running the scripts, the configuration is required:
 
     pkg load communications
     IEEE80211ac_GlobalVariables
@@ -30,8 +37,6 @@ Some scripts does not support, for now.
     simulation_OFDM_BER
     simulation_OFDM_MIMO
     test_convolutional_code
-
-For now, the Octave version is still under-development.
 
 ## MATLAB version
 
