@@ -6,19 +6,22 @@
 % Copyright (C) 2024  Shiyue He (hsy1995313@gmail.com)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-classdef Channel
+classdef ChannelModel
 
     properties
 
         % Time interval between samples (ns)
         Ts
 
+        % The samples start from 0
+        Nstart
+
         % RMS delay profile (ns)
         rms_delay
 
         % Cluster
         cluster
-        tap
+        taps
 
         % Doppler frequency
         Doppler
@@ -36,7 +39,9 @@ classdef Channel
 
     methods
 
-        function H = Channel(model, BW, fc, d, Ntx, Ltx, Nrx, Lrx, v)
+        function H = ChannelModel(model, BW, fc, d, Ntx, Ltx_cm, Nrx, Lrx_cm, v)
+
+            H.Nstart = 0;
 
             c = 3e8; % Light speed
 
@@ -138,32 +143,33 @@ classdef Channel
 
             H.los_shadow = 3;
 
-            L = H.pathloss(model, d);
+            % L = H.pathloss(model, d)
+            L = 0;
 
-            Nc = length(H.cluster);
-            Ttap = H.cluster(1).delay(1): H.Ts: (H.cluster(Nc).delay(end) + H.Ts);
+            Ncluster = length(H.cluster);
+            Ttap = H.cluster(1).delay(1): H.Ts: (H.cluster(Ncluster).delay(end) + H.Ts);
             Ntap = length(Ttap);
-            H.tap = zeros(Nrx, Ntx, Nc, Ntap);
-            H.Doppler = zeros(Nc, 1);
-            for clstr_idx = 1: Nc
-                clstr = H.cluster(clstr_idx);
+            H.taps = zeros(Nrx, Ntx, Ncluster, Ntap);
+            H.Doppler = zeros(Ncluster, 1);
+            for icluster = 1: Ncluster
+                clstr = H.cluster(icluster);
 
                 AoD = rand_space_angle(clstr.AoD, clstr.TxAS);
                 AoA = rand_space_angle(clstr.AoA, clstr.RxAS);
-                phase_AoD = 2j * pi * fc * Ltx * cos(2 * pi * AoD / 360) / c * (0: Ntx-1).';
-                phase_AoA = 2j * pi * fc * Lrx * cos(2 * pi * AoA / 360) / c * (0: Nrx-1);
+                phase_AoD = 2j * pi * fc * (Ltx_cm / 100) * cos(2 * pi * AoD / 360) / c * (0: Ntx-1).';
+                phase_AoA = 2j * pi * fc * (Lrx_cm / 100) * cos(2 * pi * AoA / 360) / c * (0: Nrx-1);
 
-                H.Doppler(clstr_idx) = rand_Doppler(v, fc);
+                H.Doppler(icluster) = rand_Doppler(v, fc);
 
-                for tap_idx = 1: Ntap
-                    if H.Ts * tap_idx < clstr.delay(1)
-                        H.tap(:, :, clstr_idx, tap_idx) = zeros(Nrx, Ntx);
+                for itap = 1: Ntap
+                    if H.Ts * itap < clstr.delay(1)
+                        H.taps(:, :, icluster, itap) = zeros(Nrx, Ntx);
                         continue;
                     endif
 
-                    tap_amp = 10^(interp1(clstr.delay, clstr.power, Ttap(tap_idx), 'extrap')/20);
+                    tap_amp = 10^(interp1(clstr.delay, clstr.power, Ttap(itap), 'extrap')/20);
 
-                    H.tap(:, :, clstr_idx, tap_idx) = 10^(-L / 20) * tap_amp * (...
+                    H.taps(:, :, icluster, itap) = 10^(-L / 20) * tap_amp * (...
                                 sqrt(H.K / (H.K + 1)) * exp(2j * pi * rand(Nrx, Ntx)) .* (exp(phase_AoD) * exp(phase_AoA)) + ...
                                 sqrt(1 / (H.K + 1)) * (1 / sqrt(2) * (randn(Nrx, Ntx) + 1j * randn(Nrx, Ntx))) ...
                             );
@@ -171,6 +177,7 @@ classdef Channel
                 endfor
             endfor
         endfunction
+
         function L = pathloss(H, model, d)
 
             if d <= 2
@@ -185,6 +192,40 @@ classdef Channel
             else
                 L = 20 * log10(d) + max(H.los_shadow * randn(), 14);
             endif
+
+        endfunction
+
+        function y = channel(H, x)
+
+            Nsamp = size(x, 2);
+
+            Nrx = size(H.taps, 1);
+            Ntx = size(H.taps, 2);
+            Ncluster = size(H.taps, 3);
+            Ntap = size(H.taps, 4);
+
+            y = zeros(size(x));
+            x = [zeros(Ntx, Ntap -1), x];
+
+            % Space domain processing
+            for irx = 1: Nrx
+                for itx = 1: Ntx
+
+                    taps_reshape = reshape(H.taps(irx, itx, :, :), Ncluster, Ntap);
+                    % Time domain processing
+                    for isamp = 1: Nsamp
+
+                        Doppler_shift = exp(2j * pi * H.Doppler * H.Ts * (H.Nstart: H.Nstart + Ntap -1));
+                        time_varying_tap = sum(taps_reshape .* Doppler_shift, 1);
+
+                        y(irx, isamp) = y(irx, isamp) + ...
+                            sum(time_varying_tap(end:-1:1) .* x(itx, isamp: isamp + Ntap -1));
+
+                        H.Nstart = H.Nstart + 1;
+
+                    endfor
+                endfor
+            endfor
 
         endfunction
 
