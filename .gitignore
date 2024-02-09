@@ -1,6 +1,4 @@
 # Prerequisites
-*.d
-*.asv
 *~
 .*
 
@@ -8,4 +6,8 @@
 *.bin
 *.mat
 
+# Tags
+tags
+
+# Octave
 octave-workspace
