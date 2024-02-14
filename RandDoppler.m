@@ -3,12 +3,13 @@
 % Randam Doppler generation.
 % Reference: IEEE 802.11n Indoor MIMO WLAN Channel Models
 %
-% Copyright (C) 2024  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2024 OctHe
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function f = rand_Doppler(v, f0)
+function f = RandDoppler(v, f0)
 
-    c = 3e8;  % Light speed
+    global c
+
     A = 9; % Coefficient of Doppler spread distribution
 
     fd = v / c * f0;

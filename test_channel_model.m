@@ -18,6 +18,10 @@ v = 1; % m/s
 Ltx = 12; % cm
 Lrx = 12; % cm
 
+% Fix the rand seed
+rng(10);
+Config('legacy');
+
 H = ChannelModel('F', BW, fc, d, Ntx, Ltx, Nrx, Lrx, v);
 
 % tic;

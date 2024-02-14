@@ -2,7 +2,7 @@
 %
 % Plot the randam distributions
 %
-% Copyright (C) 2024  Shiyue He (hsy1995313@gmail.com)
+% Copyright (C) 2024 OctHe
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -12,7 +12,7 @@ f0 = 5e9; % Hz
 
 fd = zeros(N, 1);
 for n = 1: N
-  fd(n) = rand_Doppler(v, f0);
+  fd(n) = RandDoppler(v, f0);
 endfor
 space_angle = rand_space_angle(20, 20, N);
 

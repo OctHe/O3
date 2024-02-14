@@ -1,14 +1,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Standard gives variables that are both knwon for TX and RX
+% Configuration of O3. It gives variables that are both knwon for TX and RX
 % 
 % Copyright (C) 2021-2024 OctHe 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function Standard(version)
+function Config(version)
 
     global c 
-    global L_STS L_LTS PILOTS MCS_TAB
+    global LSTS LLTS PILOTS MCS_TAB
     global N_FFT N_PILOT N_DATA N_CP N_STF N_LTF N_TAIL
     global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX NONZERO_INDEX
 
@@ -16,11 +16,11 @@ function Standard(version)
     c = 3e8;
 
     %% Short/Long training symbol and pilot
-    L_STS = sqrt(1/2)* ...
+    LSTS = sqrt(1/2)* ...
         [ 0 0  1+1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0 ...	subcarriers -28 : -1  
           0 0 0 -1-1j 0 0 0 -1-1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0 0  1+1j 0 0].';	% subcarriers 1 : 28
                         
-    L_LTS = ...
+    LLTS = ...
         [ 1  1 -1 -1  1  1 -1  1 -1  1  1  1  1  1  1 -1 -1  1  1 -1  1 -1  1  1  1  1 ...  subcarriers -26 : -1
           1 -1 -1  1  1 -1  1 -1  1 -1 -1 -1 -1 -1  1  1 -1 -1  1 -1  1 -1  1  1  1  1].';	% subcarriers 1 : 26
 

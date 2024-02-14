@@ -8,11 +8,11 @@
 clear all;
 close all;
 
-Standard('legacy');
+Config('legacy');
 
 %% Variables
 global N_CP
-global L_STS L_LTS
+global LSTS LLTS
 
 Ntxs = 1;
 Nzeros = 100;
@@ -23,10 +23,11 @@ groundtruth = Nzeros + 320;  % ground truth is the end of the LTF
 disp(['******************************']);
 
 % Preambles
-LSTF = FreqProcessing(L_STS, 'training');
-LLTF = FreqProcessing(L_LTS, 'training');
-
-stream = [zeros(Nzeros, 1); LSTF(end - 2 * N_CP +1: end); LSTF; LSTF; LLTF(end - 2 * N_CP +1: end); LLTF; LLTF];
+LSTS_t = FreqProcessing(LSTS, 'training');
+LLTS_t = FreqProcessing(LLTS, 'training');
+LSTF = [LSTS_t(end - 2 * N_CP +1: end); LSTS_t; LSTS_t];
+LLTF = [LLTS_t(end - 2 * N_CP +1: end); LLTS_t; LLTS_t];
+stream = [zeros(Nzeros, 1); LSTF; LLTF; zeros(Nzeros, 1)];
 
 % Figures: TX preambles
 figure;
@@ -53,22 +54,18 @@ figure;
 plot(abs(auto_results));
 title("Packet detection results");
 
-% % Fine time synchronization
-% if itx == 1
-%     [sync_results, LTF_index] = OFDM_SymbolSync(stream, LTF(2*N_CP +1: end, 1));
-% else
-%     [sync_results, LTF_index] = OFDM_SymbolSync(stream, LTF(2*N_CP +1: end, 1), true);
-% end
+% Fine time synchronization
+[sync_results, LTF_index] = SymbolSync(stream, LLTF(2*N_CP +1: end, 1));
 
-% % Figures: Cross correlation results
-% figure;
-% plot(abs(sync_results));
-% title("Normalized synchronization results");
+% Figures: Cross correlation results
+figure;
+plot(abs(sync_results));
+title("Normalized synchronization results");
 
-% if LTF_index == groundtruth
-%     disp(['Fine time synchronization correct!']);
-% else
-%     disp(['Fine time synchronization error!']);
-%     disp(['         Delay: ' num2str(LTF_index - groundtruth) ' Sample(s)']);
-% end
+if LTF_index == groundtruth
+    disp(['Fine time synchronization correct!']);
+else
+    disp(['Fine time synchronization error!']);
+    disp(['         Delay: ' num2str(LTF_index - groundtruth) ' Sample(s)']);
+end
 
