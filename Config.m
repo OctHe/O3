@@ -9,7 +9,7 @@ function Config(version)
 
     global c 
     global LSTS LLTS PILOTS MCS_TAB
-    global N_FFT N_PILOT N_DATA N_CP N_STF N_LTF N_TAIL
+    global N_FFT N_PILOT N_DATA N_CP N_LSTF N_LLTF N_TAIL
     global DC_INDEX PILOT_INDEX GUARD_INDEX DATA_INDEX NONZERO_INDEX
 
     %% Light speed

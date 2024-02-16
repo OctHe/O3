@@ -11,3 +11,7 @@ tags
 
 # Octave
 octave-workspace
+
+# Directory to save dump data
+baseline/
+signal/
